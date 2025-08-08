@@ -1,0 +1,244 @@
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>cd "C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times"
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>python calculate_response_times.py
+Processing: 2024_CAD_ALL.xlsx
+Processing: 2025_01_to_06_ALL_CAD.xlsx
+Consolidated output saved to: C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times\output\response_times_20250709_160013.csv
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>import warnings
+'import' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>warnings.filterwarnings(
+'warnings.filterwarnings' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    "ignore",
+'"ignore"' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    message="Workbook contains no default style, apply openpyxl's default"
+'message' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>)
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>import os
+'import' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>import glob
+'import' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>import pandas as pd
+'import' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>from datetime import datetime
+'from' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times># ─── Configuration ────────────────────────────────────────────────────────────
+'#' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>BASE_DIR      = r"C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times"
+'BASE_DIR' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>RAW_DIR       = r"C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_CAD"
+'RAW_DIR' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>PROCESSED_DIR = os.path.join(BASE_DIR, "data", "processed")
+'PROCESSED_DIR' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>OUTPUT_DIR    = os.path.join(BASE_DIR, "output")
+'OUTPUT_DIR' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>LOGS_DIR      = os.path.join(BASE_DIR, "logs")
+'LOGS_DIR' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times># Ensure output folders exist
+'#' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>for d in (PROCESSED_DIR, OUTPUT_DIR, LOGS_DIR):
+d was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    os.makedirs(d, exist_ok=True)
+'os.makedirs' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times># ─── Core Processing ────────────────────────────────────────────────────────────
+'#' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>def process_file(path):
+'def' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    df = pd.read_excel(path)
+'df' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    # 1. Parse your three key timestamps
+'#' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    df['Time Dispatched'] = pd.to_datetime(df['Time Dispatched'], errors='coerce')
+'df['Time' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    df['Time Out']        = pd.to_datetime(df['Time Out'],        errors='coerce')
+'df['Time' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    df['Time In']         = pd.to_datetime(df['Time In'],         errors='coerce')
+'df['Time' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    # 2. Compute durations (minutes)
+'#' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    df['Response_Time']  = (df['Time Out'] - df['Time Dispatched']) \
+'df['Response_Time']' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>                             .dt.total_seconds().div(60).round(2)
+'.dt.total_seconds' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    df['Time_On_Scene']  = (df['Time In']  - df['Time Out']) \
+'df['Time_On_Scene']' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>                             .dt.total_seconds().div(60).round(2)
+'.dt.total_seconds' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    # 3. Bounds‐check unrealistic values
+'#' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    df.loc[(df['Response_Time']  < 0) | (df['Response_Time']  > 60),  'Response_Time']  = pd.NA
+'Response_Time'] was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    df.loc[(df['Time_On_Scene']  < 0) | (df['Time_On_Scene']  > 720), 'Time_On_Scene']  = pd.NA
+'Time_On_Scene'] was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    # 4. Categorize into bins
+'#' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    def resp_cat(x):
+'def' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        if pd.isna(x):    return "Data Missing"
+return was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        if x == 0:        return "Instant (0 min)"
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        if x <= 0.5:      return "Very Fast (≤30 sec)"
+< was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        if x <= 2:        return "Fast (≤2 min)"
+< was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        if x <= 5:        return "Normal (2–5 min)"
+< was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        if x <= 10:       return "Slow (5–10 min)"
+< was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        return "Very Slow (>10 min)"
+'return' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    def scene_cat(x):
+'def' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        if pd.isna(x):    return "Data Missing"
+return was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        if x == 0:        return "No Time (0 min)"
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        if x <= 15:       return "Brief (≤15 min)"
+< was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        if x <= 60:       return "Normal (15–60 min)"
+< was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        if x <= 120:      return "Extended (1–2 hrs)"
+< was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        return "Very Long (>2 hrs)"
+'return' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    df['Response_Category'] = df['Response_Time'].apply(resp_cat)
+'df['Response_Category']' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    df['Scene_Category']    = df['Time_On_Scene'].apply(scene_cat)
+'df['Scene_Category']' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    # 5. Flag outliers and assign performance level
+'#' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    df['Is_Outlier'] = (
+'df['Is_Outlier']' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        (df['Response_Time']  > 10) |
+The syntax of the command is incorrect.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        (df['Time_On_Scene']  > 120)
+'df['Time_On_Scene']' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    )
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    def perf_level(x):
+'def' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        if pd.isna(x):   return "Unknown"
+return was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        if x <=  3:      return "Excellent"
+< was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        if x <=  5:      return "Good"
+< was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        if x <=  8:      return "Acceptable"
+< was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        return "Needs Improvement"
+'return' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    df['Performance_Level'] = df['Response_Time'].apply(perf_level)
+'df['Performance_Level']' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    # 6. Write per‐file CSV
+'#' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    fname = os.path.splitext(os.path.basename(path))[0] + ".csv"
+'fname' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    df.to_csv(os.path.join(PROCESSED_DIR, fname), index=False)
+'df.to_csv' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    return df
+'return' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>def main():
+'def' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    files = glob.glob(os.path.join(RAW_DIR, "*.xlsx"))
+'files' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    if not files:
+The syntax of the command is incorrect.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        print(f"No .xlsx files found in {RAW_DIR}")
+Unable to initialize device PRN
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        return
+'return' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    processed = []
+'processed' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    for path in files:
+path was unexpected at this time.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        print(f"Processing {os.path.basename(path)}")
+Unable to initialize device PRN
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        processed.append(process_file(path))
+'processed.append' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    # Consolidate all months into one CSV
+'#' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    out = os.path.join(
+'out' is not recognized as an internal or external command,
+operable program or batch file
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        OUTPUT_DIR,
+'OUTPUT_DIR' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>        f"response_times_{datetime.now():%Y%m%d_%H%M%S}.csv"
+The filename, directory name, or volume label syntax is incorrect.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    )
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    pd.concat(processed, ignore_index=True).to_csv(out, index=False)
+'pd.concat' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    print(f"Consolidated output saved to: {out}")
+Unable to initialize device PRN
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>if __name__ == "__main__":
+The syntax of the command is incorrect.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Response_Times>    main()
+'main' is not recognized as an internal or external command,
+operable program or batch file.E

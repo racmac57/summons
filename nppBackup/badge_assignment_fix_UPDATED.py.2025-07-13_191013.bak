@@ -1,0 +1,191 @@
+# 🕒 2025-07-13-15-20-00
+# Project: SummonsMaster/badge_assignment_fix_UPDATED.py
+# Author: R. A. Carucci
+# Purpose: Fix badge assignment mapping with correct file paths
+
+import pandas as pd
+import numpy as np
+from pathlib import Path
+from datetime import datetime
+
+def fix_badge_assignment_mapping():
+    print("🔧 FIXING BADGE ASSIGNMENT MAPPING - UPDATED VERSION")
+    print("=" * 60)
+    
+    base_path = Path(r"C:\Users\carucci_r\OneDrive - City of Hackensack")
+    
+    # Use correct file paths from search results
+    assignment_file = base_path / "_Hackensack_Data_Repository" / "ASSIGNED_SHIFT" / "Assignment_Master_V2.xlsx"
+    
+    # In your badge_assignment_fix_UPDATED.py, change this section:
+    possible_court_files = [
+        base_path / "24_ALL_ATS.xlsx",  # Try this first - sounds like full dataset
+        base_path / "Issued Cases JanDec 2024.xlsx",  # Or this for full year
+        base_path / "InBox" / "2025_04_ATS_Report.xlsx",
+        base_path / "InBox" / "Test - ATS Summons.xlsx"  # Keep as last resort
+    ]   
+    
+    court_file = None
+    for file_path in possible_court_files:
+        if file_path.exists():
+            court_file = file_path
+            print(f"✅ Found court file: {court_file}")
+            break
+    
+    print(f"📋 Assignment file: {assignment_file}")
+    print(f"   Exists: {'✅' if assignment_file.exists() else '❌'}")
+    
+    if not court_file:
+        print("❌ No court files found")
+        return False
+    
+    if not assignment_file.exists():
+        print("❌ Assignment file not found")
+        return False
+        
+    try:
+        # Load Assignment Master
+        print("\n📋 Loading Assignment Master V2...")
+        assignment_df = pd.read_excel(assignment_file)
+        print(f"✅ Assignment data loaded: {len(assignment_df)} officers")
+        
+        # Create badge lookup
+        badge_lookup = {}
+        for _, row in assignment_df.iterrows():
+            raw_badge = str(row.get('BADGE_NUMBER', '')).strip()
+            officer_name = str(row.get('FULL_NAME', '')).strip()
+            
+            if not officer_name or officer_name == 'nan':
+                continue
+                
+            assignment_info = {
+                'OFFICER_DISPLAY_NAME': officer_name,
+                'WG1': str(row.get('WG1', '')).strip(),
+                'WG2': str(row.get('WG2', '')).strip(),
+                'WG3': str(row.get('WG3', '')).strip(),
+                'WG4': str(row.get('WG4', '')).strip(),
+                'WG5': str(row.get('WG5', '')).strip()
+            }
+            
+            # Create badge variations
+            if raw_badge and raw_badge != 'nan':
+                badge_formats = [
+                    raw_badge,
+                    raw_badge.zfill(4),
+                    str(int(float(raw_badge))).zfill(4) if raw_badge.replace('.','').isdigit() else raw_badge
+                ]
+                
+                for badge_format in set(badge_formats):
+                    if badge_format:
+                        badge_lookup[badge_format] = assignment_info
+        
+        print(f"✅ Badge lookup created: {len(badge_lookup)} mappings")
+        
+        # Load court data
+        print("\n📊 Loading court data...")
+        court_df = pd.read_excel(court_file, skiprows=4)
+        
+        # Clean column names
+        court_df.columns = [str(col).replace('\r\n', '_').replace('\n', '_') for col in court_df.columns]
+        
+        # Identify badge column
+        badge_col_name = court_df.columns[0]
+        if 'Unnamed' in str(badge_col_name):
+            court_df = court_df.rename(columns={badge_col_name: 'BADGE_NUMBER'})
+            badge_col_name = 'BADGE_NUMBER'
+        
+        print(f"✅ Court data loaded: {len(court_df)} records")
+        
+        # Clean badge numbers
+        court_df['BADGE_CLEAN'] = court_df[badge_col_name].astype(str).str.strip()
+        court_df = court_df[~court_df['BADGE_CLEAN'].isin(['0', '0000', 'nan', 'None', '', 'TOTAL'])]
+        court_df = court_df[court_df['BADGE_CLEAN'].notna()]
+        
+        print(f"📊 Clean court data: {len(court_df)} records")
+        
+        # Apply assignment matching
+        print("\n🔗 Applying assignment matching...")
+        court_df['PADDED_BADGE_NUMBER'] = court_df['BADGE_CLEAN'].str.zfill(4)
+        court_df['OFFICER_DISPLAY_NAME'] = ''
+        court_df['WG1'] = ''
+        court_df['WG2'] = ''
+        court_df['WG3'] = ''
+        court_df['WG4'] = ''
+        court_df['WG5'] = ''
+        court_df['ASSIGNMENT_FOUND'] = False
+        
+        match_count = 0
+        lopez_matches = []
+        
+        for idx, row in court_df.iterrows():
+            badge = row['BADGE_CLEAN']
+            
+            # Try badge variations
+            badge_attempts = [
+                badge,
+                badge.lstrip('0'),
+                badge.zfill(4),
+                str(int(badge)) if badge.isdigit() else badge
+            ]
+            
+            for attempt_badge in badge_attempts:
+                if attempt_badge in badge_lookup:
+                    assignment = badge_lookup[attempt_badge]
+                    
+                    court_df.at[idx, 'OFFICER_DISPLAY_NAME'] = assignment['OFFICER_DISPLAY_NAME']
+                    court_df.at[idx, 'WG1'] = assignment['WG1']
+                    court_df.at[idx, 'WG2'] = assignment['WG2']
+                    court_df.at[idx, 'WG3'] = assignment['WG3']
+                    court_df.at[idx, 'WG4'] = assignment['WG4']
+                    court_df.at[idx, 'WG5'] = assignment['WG5']
+                    court_df.at[idx, 'ASSIGNMENT_FOUND'] = True
+                    
+                    match_count += 1
+                    
+                    if 'LOPEZ' in assignment['OFFICER_DISPLAY_NAME'].upper():
+                        lopez_matches.append({
+                            'badge': badge,
+                            'officer': assignment['OFFICER_DISPLAY_NAME'],
+                            'assignment': assignment['WG2']
+                        })
+                    break
+        
+        # Results
+        match_rate = (match_count / len(court_df)) * 100
+        print(f"\n✅ RESULTS:")
+        print(f"   • Match rate: {match_rate:.1f}%")
+        print(f"   • Successful matches: {match_count:,}")
+        
+        # Check Lopez
+        print(f"\n🔍 ANDRES LOPEZ CHECK:")
+        if lopez_matches:
+            for match in lopez_matches:
+                print(f"   ✅ {match['officer']} → {match['assignment']}")
+                
+            school_errors = [m for m in lopez_matches if 'SCHOOL' in m['assignment'].upper()]
+            if school_errors:
+                print(f"   ❌ SCHOOL THREAT ERROR FOUND!")
+            else:
+                print(f"   ✅ NO SCHOOL THREAT ERRORS")
+        else:
+            print(f"   ❌ Lopez not found")
+        
+        # Save results
+        output_dir = base_path / "03_Staging" / "Summons"
+        output_dir.mkdir(parents=True, exist_ok=True)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_file = output_dir / f"fixed_assignment_data_{timestamp}.xlsx"
+        court_df.to_excel(output_file, index=False)
+        
+        print(f"\n💾 Data saved to: {output_file}")
+        print(f"🎯 SUCCESS: Badge assignment fix complete!")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ ERROR: {e}")
+        return False
+
+if __name__ == "__main__":
+    fix_badge_assignment_mapping()

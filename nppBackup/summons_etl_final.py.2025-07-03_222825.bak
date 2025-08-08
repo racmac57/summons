@@ -1,0 +1,315 @@
+# 🕒 2025-06-28-21-00-00
+# Project: Police_Analytics_Dashboard/summons_etl_final
+# Author: R. A. Carucci
+# Purpose: Final production ETL pipeline with correct file paths and data type fixes
+
+import pandas as pd
+import numpy as np
+from pathlib import Path
+from datetime import datetime
+import re
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+def fix_data_types_quick(df):
+    """Quick data type fix for Excel save compatibility"""
+    print(f"🔧 Fixing data types for {len(df)} records...")
+    df = df.copy()
+
+    # Fix numeric columns
+    numeric_cols = ['TICKET_COUNT', 'MOVING_COUNT', 'PARKING_COUNT', 'COMPLAINT_COUNT', 
+                   'BADGE_NUMBER', 'PADDED_BADGE_NUMBER']
+    for col in numeric_cols:
+        if col in df.columns:
+            try:
+                df[col] = pd.to_numeric(
+                    df[col].astype(str).str.replace(r'[^\d.-]', '', regex=True),
+                    errors='coerce'
+                ).fillna(0)
+                print(f"  ✅ Fixed numeric: {col}")
+            except Exception as e:
+                print(f"  ⚠️ Could not fix {col}: {e}")
+
+    # Fix date columns
+    date_cols = ['ISSUE_DATE', 'PROCESSED_TIMESTAMP']
+    for col in date_cols:
+        if col in df.columns:
+            try:
+                df[col] = pd.to_datetime(df[col], errors='coerce')
+                print(f"  ✅ Fixed date: {col}")
+            except Exception as e:
+                print(f"  ⚠️ Could not fix {col}: {e}")
+
+    # Fix string columns
+    string_cols = ['OFFICER_NAME', 'DATA_SOURCE', 'DIVISION', 'BUREAU', 'FULL_NAME', 'SUMMONS_TYPE']
+    for col in string_cols:
+        if col in df.columns:
+            df[col] = df[col].astype(str).replace('nan', '').replace('None', '')
+
+    # Replace infinite values
+    df = df.replace([np.inf, -np.inf], 0)
+    print(f"✅ Data type fixes complete")
+    return df
+
+def extract_badge_number(officer_name):
+    """Extract badge number from officer name string"""
+    if pd.isna(officer_name):
+        return None
+    
+    # Look for patterns like "P.O. SMITH 1234", "DET. JONES 456", etc.
+    patterns = [
+        r'(\d{4})$',           # 4 digits at end
+        r'(\d{3})$',           # 3 digits at end  
+        r'#(\d{3,4})',         # #123 or #1234
+        r'\s(\d{3,4})\s*$',    # ending with space + digits
+        r'(\d{4})\s*$',        # 4 digits with optional space at end
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, str(officer_name))
+        if match:
+            return match.group(1).zfill(4)
+    
+    return None
+
+def main():
+    """Main ETL execution function"""
+    print("🚀 SUMMONS ETL FINAL PRODUCTION")
+    print("=" * 60)
+    
+    # CORRECTED FILE PATHS
+    base_path = Path(r"C:\Users\carucci_r\OneDrive - City of Hackensack")
+    
+    # Source files - UPDATED ASSIGNMENT MASTER PATH
+    assignment_file = base_path / "_Hackensack_Data_Repository" / "ASSIGNED_SHIFT" / "Assignment_Master_V2.xlsx"
+    summons_file = base_path / "_MONTHLY_DATA" / "EXCEL_MASTER_FOR_MONTHLY" / "SUMMON_MASTER_V2.xlsm"
+    
+    # Output directory
+    staging_path = base_path / "03_Staging" / "Summons"
+    staging_path.mkdir(parents=True, exist_ok=True)
+    
+    print(f"📁 Assignment Master: {assignment_file}")
+    print(f"📁 Summons Master: {summons_file}")
+    print(f"📁 Output Directory: {staging_path}")
+    
+    # Verify files exist
+    if not assignment_file.exists():
+        print(f"❌ Assignment Master not found: {assignment_file}")
+        return None
+    
+    if not summons_file.exists():
+        print(f"❌ Summons Master not found: {summons_file}")
+        return None
+    
+    print("✅ All source files found")
+    
+    # Load Assignment Master
+    try:
+        assignment_df = pd.read_excel(assignment_file)
+        print(f"✅ Assignment Master loaded: {len(assignment_df)} rows")
+        
+        # Extract specific columns (2,3,4,5,7,8,16) - 0-indexed: 1,2,3,4,6,7,15
+        if len(assignment_df.columns) >= 16:
+            cols_to_extract = [1, 2, 3, 4, 6, 7, 15]
+            assignment_clean = assignment_df.iloc[:, cols_to_extract].copy()
+            assignment_clean.columns = ['LAST_NAME', 'FIRST_NAME', 'BADGE_NUMBER', 
+                                       'PADDED_BADGE_NUMBER', 'DIVISION', 'BUREAU', 'FULL_NAME']
+            
+            # Clean assignment data
+            assignment_clean = assignment_clean[assignment_clean['LAST_NAME'] != 'LAST_NAME']
+            assignment_clean = assignment_clean.dropna(subset=['BADGE_NUMBER'])
+            
+            # Pad BOTH badge number columns to 4 digits for matching
+            assignment_clean['BADGE_NUMBER'] = assignment_clean['BADGE_NUMBER'].astype(str).str.extract(r'(\d+)')[0].str.zfill(4)
+            assignment_clean['PADDED_BADGE_NUMBER'] = assignment_clean['PADDED_BADGE_NUMBER'].astype(str).str.extract(r'(\d+)')[0].str.zfill(4)
+            
+            print(f"✅ Assignment data cleaned: {len(assignment_clean)} officers")
+            print(f"📋 Sample badge padding: {assignment_clean[['FULL_NAME', 'BADGE_NUMBER', 'PADDED_BADGE_NUMBER']].head(3).to_dict('records')}")
+        else:
+            print(f"❌ Assignment Master has insufficient columns: {len(assignment_df.columns)}")
+            return None
+            
+    except Exception as e:
+        print(f"❌ Error loading Assignment Master: {e}")
+        return None
+    
+    # Load Summons Master - Try ENHANCED_BADGE sheet first
+    try:
+        # First, check what sheets are available
+        excel_file = pd.ExcelFile(summons_file)
+        available_sheets = excel_file.sheet_names
+        print(f"📋 Available sheets: {available_sheets}")
+        
+        # Try to load ENHANCED_BADGE sheet
+        target_sheet = None
+        for sheet in ['ENHANCED_BADGE', 'Enhanced_Badge', 'ENHANCED BADGE']:
+            if sheet in available_sheets:
+                target_sheet = sheet
+                break
+        
+        if target_sheet:
+            summons_df = pd.read_excel(summons_file, sheet_name=target_sheet)
+            print(f"✅ Summons data loaded from '{target_sheet}': {len(summons_df)} rows")
+        else:
+            # Fallback to first non-empty sheet
+            for sheet in available_sheets:
+                try:
+                    test_df = pd.read_excel(summons_file, sheet_name=sheet)
+                    if len(test_df) > 10:  # At least 10 rows of data
+                        summons_df = test_df
+                        target_sheet = sheet
+                        print(f"✅ Using sheet '{sheet}' with {len(summons_df)} rows")
+                        break
+                except:
+                    continue
+            
+            if target_sheet is None:
+                print("❌ No suitable data sheet found")
+                return None
+        
+        print(f"📊 Columns in {target_sheet}: {list(summons_df.columns)}")
+        
+    except Exception as e:
+        print(f"❌ Error loading Summons Master: {e}")
+        return None
+    
+    # Process summons data
+    try:
+        # Look for officer name column
+        officer_col = None
+        for col in summons_df.columns:
+            if any(keyword in str(col).upper() for keyword in ['OFFICER', 'NAME', 'PATROL_MEMBER', 'MEMBER']):
+                officer_col = col
+                break
+        
+        # Look for existing badge column
+        badge_col = None
+        for col in summons_df.columns:
+            if any(keyword in str(col).upper() for keyword in ['BADGE', 'BADGE#', 'BADGE_NUMBER']):
+                badge_col = col
+                break
+        
+        if officer_col or badge_col:
+            print(f"🔍 Found columns - Officer: {officer_col}, Badge: {badge_col}")
+            
+            # Use existing badge column if available, otherwise extract from name
+            if badge_col and summons_df[badge_col].notna().any():
+                print(f"📋 Using existing badge column: {badge_col}")
+                # Extract digits and pad to 4 digits to match Assignment Master format
+                summons_df['PADDED_BADGE_NUMBER'] = summons_df[badge_col].astype(str).str.extract(r'(\d+)')[0].str.zfill(4)
+                extracted_count = summons_df['PADDED_BADGE_NUMBER'].notna().sum()
+                print(f"🔧 Badge formatting: Court format (4-digit padded) to match Assignment Master")
+            elif officer_col:
+                print(f"🔍 Extracting badges from officer names in: {officer_col}")
+                # Extract badge numbers from officer names
+                summons_df['EXTRACTED_BADGE'] = summons_df[officer_col].apply(extract_badge_number)
+                summons_df['PADDED_BADGE_NUMBER'] = summons_df['EXTRACTED_BADGE']
+                extracted_count = summons_df['PADDED_BADGE_NUMBER'].notna().sum()
+            else:
+                print("❌ No valid data source for badge numbers")
+                return None
+            
+            print(f"🔢 Badge numbers processed: {extracted_count} out of {len(summons_df)} records")
+            
+            # Show sample data
+            if officer_col:
+                sample_data = summons_df[[officer_col, 'PADDED_BADGE_NUMBER']].dropna().head(3)
+                print("📝 Sample data:")
+                for _, row in sample_data.iterrows():
+                    print(f"   {row[officer_col]} → {row['PADDED_BADGE_NUMBER']}")
+            elif badge_col:
+                sample_data = summons_df[[badge_col, 'PADDED_BADGE_NUMBER']].dropna().head(3)
+                print("📝 Sample badge data:")
+                for _, row in sample_data.iterrows():
+                    print(f"   {row[badge_col]} → {row['PADDED_BADGE_NUMBER']}")
+        else:
+            print("❌ No officer name or badge column found")
+            return None
+            
+    except Exception as e:
+        print(f"❌ Error processing summons data: {e}")
+        return None
+    
+    # Merge with assignment data
+    try:
+        merged_df = summons_df.merge(assignment_clean, on='PADDED_BADGE_NUMBER', how='left')
+        
+        # Calculate statistics
+        total_records = len(merged_df)
+        matched_records = merged_df['FULL_NAME'].notna().sum()
+        match_rate = (matched_records / total_records) * 100
+        
+        print(f"✅ Merge completed:")
+        print(f"   📊 Total records: {total_records:,}")
+        print(f"   👮 Matched officers: {matched_records:,}")
+        print(f"   📈 Match rate: {match_rate:.1f}%")
+        print(f"   🎯 Unique officers: {merged_df['FULL_NAME'].nunique()}")
+        
+        # Add processing metadata
+        merged_df['PROCESSED_TIMESTAMP'] = datetime.now()
+        merged_df['DATA_SOURCE'] = f'SUMMONS_MASTER_{target_sheet}'
+        merged_df['ETL_VERSION'] = 'v4.0_FINAL'
+        
+    except Exception as e:
+        print(f"❌ Error merging data: {e}")
+        return None
+    
+    # Apply data type fixes and save
+    try:
+        print("\n🔧 Preparing data for Excel export...")
+        
+        # Apply data type fixes
+        final_df = fix_data_types_quick(merged_df)
+        
+        # Save main output file
+        output_file = staging_path / "summons_powerbi_latest.xlsx"
+        final_df.to_excel(output_file, index=False, sheet_name='Police_Analytics_Data')
+        
+        # Verify file was created
+        if output_file.exists():
+            file_size = output_file.stat().st_size
+            print(f"🎯 SUCCESS! Output file created: {output_file}")
+            print(f"📁 File size: {file_size / 1024:.1f} KB")
+            
+            # Create backup with timestamp
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            backup_file = staging_path / f"summons_powerbi_{timestamp}.xlsx"
+            final_df.to_excel(backup_file, index=False, sheet_name='Police_Analytics_Data')
+            print(f"💾 Backup created: {backup_file.name}")
+            
+            # Final summary
+            print(f"\n🎉 ETL PIPELINE COMPLETE!")
+            print(f"=" * 60)
+            print(f"📂 Ready for Power BI: {output_file}")
+            print(f"📊 Records Processed: {len(final_df):,}")
+            print(f"👮 Officer Matches: {matched_records:,} ({match_rate:.1f}%)")
+            print(f"⏰ Processing Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"🚀 Status: READY FOR JULY 1ST DEPLOYMENT")
+            
+            return output_file
+            
+        else:
+            print("❌ Output file was not created")
+            return None
+            
+    except Exception as e:
+        print(f"❌ Error saving data: {e}")
+        
+        # Try CSV fallback
+        try:
+            csv_file = staging_path / "summons_powerbi_latest.csv"
+            final_df.to_csv(csv_file, index=False)
+            print(f"💾 Saved as CSV fallback: {csv_file}")
+            return csv_file
+        except Exception as e2:
+            print(f"❌ CSV fallback also failed: {e2}")
+            return None
+
+if __name__ == "__main__":
+    result = main()
+    if result:
+        print(f"\n✅ SUCCESS - Connect Power BI to: {result}")
+    else:
+        print(f"\n❌ FAILED - Check error messages above")
