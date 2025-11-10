@@ -88,6 +88,7 @@
 - ✅ Skip bad lines in e-ticket data
 - ✅ PEO/Class I enforcement (116 violations converted)
 - ✅ Rolling 13-month window calculated automatically (excludes current in-progress month)
+- ✅ Assignment diagnostics with manual overrides for missing badges (e.g., badge 0388 now hard-coded to Patrol Bureau to ensure 100% match rate)
 
 ---
 
@@ -152,8 +153,8 @@
 - **Special Complaint (C)**: 2 (≪1%)
 
 ### Assignment Enrichment:
-- **Matched**: 3,800 records (99.5%)
-- **Unmatched**: 18 records (0.5%)
+- **Matched**: 3,818 records (100%) — includes manual override for badge 0388 until Assignment_Master is updated
+- **Unmatched**: 0 records (0.0%)
 
 ### PEO/Class I Rule:
 - **Converted M→P**: 116 violations
@@ -226,6 +227,7 @@ Matrix configuration:
 - Ensure the Python export keeps `TICKET_COUNT` numeric; if needed `pd.to_numeric(df['TICKET_COUNT'], errors='coerce')`.
 - In Power BI, verify field summarization is set to **Sum**.
 - Confirm the matrix still references the `Total Tickets` measure.
+- Run `diagnose_unmatched_badges.py` if you need to audit badge assignments; it now exports a CSV with details for any unmatched badges (should be empty after overrides).
 
 ### Advanced (duplicate rows)
 If the dataset contains multiple rows per Month/Type, use:

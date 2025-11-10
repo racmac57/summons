@@ -20,8 +20,13 @@ Two Python scripts to diagnose and fix format mismatches between gold standard h
      Total Tickets = SUM('___Summons'[TICKET_COUNT])
      ```
      Use this measure in the matrix Values bucket to display monthly totals (Oct‑25: M = 480, P = 3,336, Total = 3,816).
+   - `SummonsMaster_Simple.py` now pads/normalizes badges, applies diagnostics, and includes a manual override for badge `0388` (Officer Liggio) so the Patrol bureau is always present. See log output for match counts (look for `Assignment enrichment: 3818/3818`).
 
-3. **Legacy merge scripts** (below) remain available for validating individual CSV drops, but the automated pipeline supersedes them for monthly refreshes.
+3. **Diagnostics for unmatched badges**
+   - Run `diagnose_unmatched_badges.py` (included in the repo) after the ETL to export any remaining unmatched records to `unmatched_badges_diagnostic.csv`.
+   - If badges are missing in `Assignment_Master_V2.csv`, add them or extend `ASSIGNMENT_OVERRIDES` in the script; log output now surfaces sample badge numbers automatically.
+
+4. **Legacy merge scripts** (below) remain available for validating individual CSV drops, but the automated pipeline supersedes them for monthly refreshes.
 
 ---
 

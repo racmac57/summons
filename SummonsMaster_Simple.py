@@ -39,6 +39,21 @@ ASSIGNMENT_FILE = Path(
     r"C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Personnel\Assignment_Master_V2.csv"
 )
 
+# Manual overrides for badges missing from assignment file
+ASSIGNMENT_OVERRIDES = {
+    # Example: Badge 0388 currently missing from assignment master but needed for bureau reporting
+    "0388": {
+        "OFFICER_DISPLAY_NAME": "LIGGIO, PO",
+        "TEAM": "PATROL",
+        "WG1": "OPERATIONS DIVISION",
+        "WG2": "PATROL BUREAU",
+        "WG3": "PLATOON A",
+        "WG4": "A3",
+        "WG5": "",
+        "POSS_CONTRACT_TYPE": "",
+    },
+}
+
 # Output
 OUTPUT_FILE = Path(
     r"C:\Users\carucci_r\OneDrive - City of Hackensack\03_Staging\Summons\summons_powerbi_latest.xlsx"
@@ -407,6 +422,12 @@ def load_assignment_data():
     # Ensure badge numbers are properly padded
     df["PADDED_BADGE_NUMBER"] = df["PADDED_BADGE_NUMBER"].apply(pad_badge_number)
 
+    # Standardize officer display name casing
+    df["Proposed 4-Digit Format"] = df["Proposed 4-Digit Format"].astype(str).str.strip()
+    for col in ["TEAM", "WG1", "WG2", "WG3", "WG4", "WG5", "POSS_CONTRACT_TYPE"]:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.strip()
+
     # Remove duplicates
     df = df.drop_duplicates(subset=["PADDED_BADGE_NUMBER"], keep="first")
 
@@ -419,6 +440,14 @@ def enrich_with_assignments(df, assign_df):
     if assign_df.empty:
         log.warning("No assignment data available - skipping enrichment")
         return df
+
+    # Ensure PADDED_BADGE_NUMBER column exists and is padded
+    df["PADDED_BADGE_NUMBER"] = df["PADDED_BADGE_NUMBER"].apply(pad_badge_number)
+
+    # Diagnostics before merge
+    total_badges = df["PADDED_BADGE_NUMBER"].notna().sum()
+    unique_badges = df.loc[df["PADDED_BADGE_NUMBER"] != "", "PADDED_BADGE_NUMBER"].nunique()
+    log.info(f"Assignment merge prep: {total_badges} records contain badge numbers ({unique_badges} unique)")
 
     starting_rows = len(df)
 
@@ -447,8 +476,25 @@ def enrich_with_assignments(df, assign_df):
             merged.loc[mask, col] = merged.loc[mask, assign_col]
             merged.drop(columns=[assign_col], inplace=True)
 
+    # Apply manual overrides for known badges not present in assignment file
+    for badge, overrides in ASSIGNMENT_OVERRIDES.items():
+        mask = merged["PADDED_BADGE_NUMBER"] == badge
+        if mask.any():
+            log.info(f"Applying assignment override for badge {badge} ({mask.sum()} records)")
+            for col, value in overrides.items():
+                if col in merged.columns:
+                    merged.loc[mask, col] = value
+
     # Mark records with assignments found
     merged["ASSIGNMENT_FOUND"] = (merged["OFFICER_DISPLAY_NAME"].astype(str).str.strip() != "")
+
+    # Default unknown bureau/team for unmatched badge records (excluding historical aggregates)
+    unmatched_mask = (~merged["ASSIGNMENT_FOUND"]) & (merged["PADDED_BADGE_NUMBER"].astype(str).str.strip() != "")
+    if unmatched_mask.any():
+        merged.loc[unmatched_mask, ["TEAM", "WG1", "WG2", "WG3", "WG4", "WG5"]] = merged.loc[
+            unmatched_mask, ["TEAM", "WG1", "WG2", "WG3", "WG4", "WG5"]
+        ].fillna("").replace("", "UNKNOWN")
+        merged.loc[unmatched_mask, "WG2"] = "UNKNOWN"
 
     # Add badge to display name if not already there
     def add_badge_to_name(row):
@@ -471,6 +517,22 @@ def enrich_with_assignments(df, assign_df):
 
     matched = merged["ASSIGNMENT_FOUND"].sum()
     log.info(f"Assignment enrichment: {matched}/{len(merged)} records matched ({matched/len(merged)*100:.1f}%)")
+
+    # Diagnostics for unmatched badges
+    unmatched_badges = merged.loc[~merged["ASSIGNMENT_FOUND"], "PADDED_BADGE_NUMBER"].astype(str).str.strip()
+    unmatched_badges = [b for b in unmatched_badges if b]
+    if unmatched_badges:
+        sample_unmatched = unmatched_badges[:10]
+        log.warning(f"Unmatched badge records: {len(unmatched_badges)} (showing up to 10): {sample_unmatched}")
+
+        summons_badges = set(merged.loc[merged["PADDED_BADGE_NUMBER"] != "", "PADDED_BADGE_NUMBER"])
+        assignment_badges = set(assign_df["PADDED_BADGE_NUMBER"])
+        missing_in_assignment = sorted(list(summons_badges - assignment_badges))[:10]
+        if missing_in_assignment:
+            log.warning(f"Badges present in summons but not in Assignment_Master (sample): {missing_in_assignment}")
+
+    else:
+        log.info("All badge-bearing records matched an assignment entry.")
 
     return merged
 
