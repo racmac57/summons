@@ -1,0 +1,14 @@
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons>cd "C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons" && python -c "from pathlib import Path; base = Path(r'C:\Users\carucci_r\OneDrive - City of Hackensack'); print('🔍 Searching...'); [print(f'✅ Assignment: {f}') for f in base.glob('**/Assignment_Master*.xlsx')]; [print(f'📊 Court: {f}') for f in list(base.glob('**/*ATS*.xlsx'))[:3]]"
+🔍 Searching...
+✅ Assignment: C:\Users\carucci_r\OneDrive - City of Hackensack\InBox\ASSIGNMENT_MASTER 1.xlsx
+✅ Assignment: C:\Users\carucci_r\OneDrive - City of Hackensack\_Hackensack_Data_Repository\Ai_Chats\ASSIGNMENT_MASTER_TABLE_AFTER_ENRICHED.xlsx
+✅ Assignment: C:\Users\carucci_r\OneDrive - City of Hackensack\_Hackensack_Data_Repository\ASSIGNED_SHIFT\Assignment_Master_V2.xlsx
+✅ Assignment: C:\Users\carucci_r\OneDrive - City of Hackensack\_Hackensack_Data_Repository\ASSIGNED_SHIFT\Assignment_Master_V2_backup.xlsx
+✅ Assignment: C:\Users\carucci_r\OneDrive - City of Hackensack\_Hackensack_Data_Repository\scripts\assignment_master_merger_enhanced\ASSIGNMENT_MASTER.xlsx
+✅ Assignment: C:\Users\carucci_r\OneDrive - City of Hackensack\_Hackensack_Data_Repository\ASSIGNED_SHIFT\archive\ASSIGNMENT_MASTER.xlsx
+✅ Assignment: C:\Users\carucci_r\OneDrive - City of Hackensack\07_CodeExports\PYTHON\assignment_master_merger_enhanced\ASSIGNMENT_MASTER.xlsx
+✅ Assignment: C:\Users\carucci_r\OneDrive - City of Hackensack\01_DataSources\MASTER_NAME\scripts\output\merged_data\Assignment_Master.xlsx
+✅ Assignment: C:\Users\carucci_r\OneDrive - City of Hackensack\01_DataSources\MASTER_NAME\scripts\data_sources\assignment_master\ASSIGNMENT_MASTER.xlsx
+📊 Court: C:\Users\carucci_r\OneDrive - City of Hackensack\InBox\acs_ats_cases_by_agencies_20241209_042924.xls.xlsx
+📊 Court: C:\Users\carucci_r\OneDrive - City of Hackensack\InBox\Test - ATS Summons.xlsx
+📊 Court: C:\Users\carucci_r\OneDrive - City of Hackensack\InBox\TEST_RUN_ATS.xlsx

@@ -1,0 +1,108 @@
+Administrative Revenue = 
+CALCULATE([Total Revenue], 'Previous_Month_ATS_Court_Data'[WG1] = "Administrative")
+
+Housing Only Revenue = 
+CALCULATE(
+    [Total Revenue],
+    'Previous_Month_ATS_Court_Data'[WG2] = "Housing",
+    'Previous_Month_ATS_Court_Data'[ASSIGNMENT_FOUND] = TRUE
+)
+
+Housing Only Revenue = 
+CALCULATE(
+    [Total Revenue],
+    'Previous_Month_ATS_Court_Data'[WG2] = "Housing",
+    'Previous_Month_ATS_Court_Data'[ASSIGNMENT_FOUND] = TRUE
+)
+
+Patrol Bureau Only Revenue = 
+CALCULATE(
+    [Total Revenue],
+    'Previous_Month_ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'Previous_Month_ATS_Court_Data'[ASSIGNMENT_FOUND] = TRUE
+)
+
+Patrol Bureau Revenue = 
+CALCULATE(
+    [Total Revenue],
+    'Previous_Month_ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'Previous_Month_ATS_Court_Data'[ASSIGNMENT_FOUND] = TRUE
+)
+
+Revenue per Action = DIVIDE([Total Revenue], [Total Enforcement Actions], 0)
+
+Top Officer Revenue = 
+VAR TopOfficerName = [Top Officer]
+VAR TopOfficerRev = 
+    CALCULATE(
+        [Total Revenue],
+        'Previous_Month_ATS_Court_Data'[OFFICER_DISPLAY_NAME] = TopOfficerName
+    )
+RETURN TopOfficerRev
+
+Total Revenue = SUM('Previous_Month_ATS_Court_Data'[TOTAL_PAID_AMOUNT])
+
+Total Revenue = SUM('Previous_Month_ATS_Court_Data'[TOTAL_PAID_AMOUNT])
+
+WG2 Revenue = 
+CALCULATE(
+    [Total Revenue],
+    VALUES('Previous_Month_ATS_Court_Data'[WG2]),
+    'Previous_Month_ATS_Court_Data'[ASSIGNMENT_FOUND] = TRUE
+)
+
+WG2 Revenue = 
+CALCULATE(
+    [Total Revenue],
+    VALUES('Previous_Month_ATS_Court_Data'[WG2]),
+    'Previous_Month_ATS_Court_Data'[ASSIGNMENT_FOUND] = TRUE
+)
+
+
+WG3 Revenue = 
+CALCULATE(
+    [Total Revenue],
+    VALUES('Previous_Month_ATS_Court_Data'[WG3]),
+    'Previous_Month_ATS_Court_Data'[ASSIGNMENT_FOUND] = TRUE
+)
+
+
+WG3 Revenue Fixed = 
+IF(
+    HASONEVALUE('Previous_Month_ATS_Court_Data'[WG3]),
+    CALCULATE(
+        [Total Revenue],
+        'Previous_Month_ATS_Court_Data'[WG3] = SELECTEDVALUE('Previous_Month_ATS_Court_Data'[WG3]),
+        'Previous_Month_ATS_Court_Data'[ASSIGNMENT_FOUND] = TRUE
+    ),
+    BLANK()
+)
+
+WG3 Revenue Fixed = 
+IF(
+    HASONEVALUE('Previous_Month_ATS_Court_Data'[WG3]),
+    CALCULATE(
+        [Total Revenue],
+        'Previous_Month_ATS_Court_Data'[WG3] = SELECTEDVALUE('Previous_Month_ATS_Court_Data'[WG3]),
+        'Previous_Month_ATS_Court_Data'[ASSIGNMENT_FOUND] = TRUE
+    ),
+    BLANK()
+)
+
+WG4 Revenue = 
+CALCULATE(
+    [Total Revenue],
+    VALUES('Previous_Month_ATS_Court_Data'[WG4]),
+    'Previous_Month_ATS_Court_Data'[ASSIGNMENT_FOUND] = TRUE
+)
+
+WG4 Revenue Fixed = 
+IF(
+    HASONEVALUE('Previous_Month_ATS_Court_Data'[WG4]),
+    CALCULATE(
+        [Total Revenue],
+        'Previous_Month_ATS_Court_Data'[WG4] = SELECTEDVALUE('Previous_Month_ATS_Court_Data'[WG4]),
+        'Previous_Month_ATS_Court_Data'[ASSIGNMENT_FOUND] = TRUE
+    ),
+    BLANK()
+)

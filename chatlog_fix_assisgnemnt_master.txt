@@ -1,0 +1,500 @@
+
+SUMMONS_MASTER_QUERY /
+
+Assignment_Master_V2.xlsx
+xlsx
+
+
+ATS_Court_Data_mcode_table.txt
+1,012 lines
+
+txt
+
+there were issues with some of the assignments in the assignment master,  the attached version has the updated data. I discovered the issue when using a dax see below
+I have this DAX
+Top_5_Moving_Department_Wide = 
+VAR AllMovingOfficers = 
+    CALCULATETABLE(
+        VALUES('Previous_Month_ATS_Court_Data'[OFFICER_DISPLAY_NAME]),
+        'Previous_Month_ATS_Court_Data'[TYPE] = "M",
+        'Previous_Month_ATS_Court_Data'[ASSIGNMENT_FOUND] = TRUE
+    )
+VAR TopOfficersTable = 
+    ADDCOLUMNS(
+        AllMovingOfficers,
+        "MovingCount", 
+        CALCULATE(
+            COUNTROWS('Previous_Month_ATS_Court_Data'),
+            'Previous_Month_ATS_Court_Data'[TYPE] = "M",
+            'Previous_Month_ATS_Court_Data'[ASSIGNMENT_FOUND] = TRUE
+        ),
+        "CleanName",
+        VAR FullName = [OFFICER_DISPLAY_NAME]
+        VAR BadgeStart = SEARCH(" ", FullName, SEARCH(" ", FullName) + 1, 0)
+        VAR NumberStart = SEARCH("0", FullName, BadgeStart, SEARCH("1", FullName, BadgeStart, SEARCH("2", FullName, BadgeStart, SEARCH("3", FullName, BadgeStart, SEARCH("4", FullName, BadgeStart, SEARCH("5", FullName, BadgeStart, SEARCH("6", FullName, BadgeStart, SEARCH("7", FullName, BadgeStart, SEARCH("8", FullName, BadgeStart, SEARCH("9", FullName, BadgeStart, 0))))))))))
+        RETURN
+        IF(NumberStart > 0,
+           TRIM(LEFT(FullName, NumberStart - 1)),
+           FullName
+        ),
+        "Division",
+        CALCULATE(
+            VALUES('Previous_Month_ATS_Court_Data'[WG2]),
+            'Previous_Month_ATS_Court_Data'[TYPE] = "M",
+            'Previous_Month_ATS_Court_Data'[ASSIGNMENT_FOUND] = TRUE
+        )
+    )
+VAR Top5Officers = 
+    TOPN(5, TopOfficersTable, [MovingCount], DESC)
+VAR Result = 
+    CONCATENATEX(
+        Top5Officers,
+        [CleanName] & " (" & [Division] & "): " & [MovingCount],
+        UNICHAR(10),
+        [MovingCount],
+        DESC
+    )
+RETURN Result
+I noticed that Andres Lopez is incorrectly showing that he is assigned to School threat when he is actually assigned to patrol. 
+I attached the queries ' code and the assignment master that I used to map the officer to their WG (Working Group). I found that padding the officer badge numbers with leading zeros so that they are 4-digits gave the best results.
+
+the m code and preview table also attached shows andres lopez being assigned to the wrong working group
+
+Edit
+
+Searched project for “Andres Lopez assignment issue School threat patrol badge number padding”
+5 results
+
+
+
+
+
+
+
+
+I can see the issue! Looking at your data and the attached files, the problem is a badge number format mismatch that's causing assignment lookup failures. Let me analyze this step by step.
+
+
+Analyzed data
+View analysis
+
+
+
+
+Analyzed data
+View analysis
+
+
+
+Based on my analysis, I've identified the root cause of the assignment issue. Here's what's happening and how to fix it:
+
+
+Badge Assignment Fix - Python ETL Script
+Code 
+Root Cause Analysis
+Based on the data you've provided, I've identified the exact issue:
+
+🚨 CRITICAL PROBLEM: Your current ETL process has a badge format mismatch that's causing multiple different badge numbers to be incorrectly mapped to the same officer.
+
+Evidence from your data:
+
+Badge 83 → "P.O. ANTHONY MATTALIAN 83"
+Badge 135 → "P.O. ANTHONY MATTALIAN 83" (❌ WRONG)
+Badge 138 → "P.O. ANTHONY MATTALIAN 83" (❌ WRONG)
+This pattern suggests your assignment lookup is failing for most badges and defaulting to a single officer (Anthony Mattalian), which explains why Andres Lopez appears with the wrong assignment.
+
+Key Issues:
+Badge Format Inconsistency: Court data uses 4-digit padded badges (0083) while Assignment Master may use different formats
+Failed Assignment Lookups: When badge matching fails, the system appears to default to the first successful match
+Data Quality: The Assignment Master V2 you attached should have the corrected assignments
+Solution Steps:
+1. Immediate Fix - Use the Script Above
+The Python script I created will:
+
+Load your corrected Assignment Master V2
+Create comprehensive badge format matching (handles 83, 0083, 083, etc.)
+Apply proper officer-to-badge mapping
+Eliminate the "multiple badges → one officer" problem
+2. Power Query M-Code Fix
+For your existing M-Code approach, update the assignment lookup logic:
+
+m
+// In your ATS_Court_Data query, modify the assignment lookup:
+= Table.AddColumn(#"Previous Step", "ASSIGNMENT_FOUND", 
+    each 
+        let
+            CleanBadge = Text.PadStart(Text.From([PADDED_BADGE_NUMBER]), 4, "0"),
+            RawBadge = Text.From([PADDED_BADGE_NUMBER]),
+            
+            // Try multiple badge formats
+            LookupResult = 
+                if Table.SelectRows(Assignment_Master, (x) => x[PADDED_BADGE_NUMBER] = CleanBadge){0}? <> null then
+                    Table.SelectRows(Assignment_Master, (x) => x[PADDED_BADGE_NUMBER] = CleanBadge){0}
+                else if Table.SelectRows(Assignment_Master, (x) => Text.From(x[BADGE_NUMBER]) = Text.TrimStart(RawBadge, "0")){0}? <> null then
+                    Table.SelectRows(Assignment_Master, (x) => Text.From(x[BADGE_NUMBER]) = Text.TrimStart(RawBadge, "0")){0}
+                else
+                    null
+        in
+            LookupResult
+)
+3. Verification Steps
+After running the fix:
+
+Check unique badge-to-officer mapping: Each badge should map to exactly one officer
+Verify Andres Lopez assignment: Should show correct patrol assignment, not School threat
+Review match rate: Should be >90% for active officers
+4. Data Quality Pitfalls to Avoid
+Don't assume badge format consistency between data sources
+Always pad badge numbers to 4 digits for matching
+Test with known officers like Andres Lopez to verify correctness
+Check for assignment conflicts where one badge maps to multiple officers
+Bottom Line: The issue isn't with your DAX logic - it's with the underlying data quality from incorrect badge-to-assignment mapping. Fix the ETL process first, then your DAX will work correctly.
+
+
+
+
+
+provide the full m code Provide the Final Full Script (Drop-in Ready), I added the script to "C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons\badge_assignment_fix.py"
+
+assist with running the updated script to fix the issue
+
+Edit
+I'll help you run the updated script and provide the complete M-Code solution. Let me first check your project knowledge for any existing ETL patterns, then provide both solutions.
+
+
+Searched project for “M code Power Query assignment master badge lookup ETL script”
+8 results
+
+
+
+
+
+
+
+
+
+Perfect! I can see your ETL patterns. Now let me provide both the Python script execution assistance and the complete M-Code solution.
+
+
+Script Execution Guide + Updated Python ETL
+Code 
+
+Complete M-Code Solution for Badge Assignment Fix
+Code 
+
+
+
+
+Continue
+
+Edit
+
+Complete M-Code Solution for Badge Assignment Fix
+Code ∙ Version 2 
+Now let's help you run the Python script. Here's the step-by-step execution guide:
+
+🚀 STEP 1: Run the Python Script
+Option A: Command Prompt/PowerShell
+cmd
+# Navigate to your script directory
+cd "C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons"
+
+# Run the script
+python badge_assignment_fix.py
+Option B: Python/VS Code
+python
+# Open Python console and run:
+exec(open(r'C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons\badge_assignment_fix.py').read())
+Option C: Direct Execution
+Double-click badge_assignment_fix.py
+Or open in VS Code and press F5
+🔧 STEP 2: Deploy M-Code Solution
+In Power Query Editor:
+Create Assignment Lookup Query:
+Data → Get Data → Blank Query
+Name: Assignment_Master_Lookup
+Paste Query 1 from the M-Code artifact
+Create Main Data Query:
+New Blank Query
+Name: Court_Data_with_Fixed_Assignments
+Paste Query 2 from the M-Code artifact
+Create Quality Check:
+New Blank Query
+Name: Assignment_Quality_Check
+Paste Query 3 from the M-Code artifact
+Verify Lopez Assignment:
+New Blank Query
+Name: Andres_Lopez_Verification
+Paste Query 4 from the M-Code artifact
+Load Final Dataset:
+New Blank Query
+Name: Power_BI_Final_Dataset
+Paste Query 5 from the M-Code artifact
+Enable Load for this query only
+🎯 STEP 3: Update Your DAX
+Replace your existing DAX with this corrected version:
+
+dax
+Top_5_Moving_Department_Wide = 
+VAR AllMovingOfficers = 
+    CALCULATETABLE(
+        VALUES('Power_BI_Final_Dataset'[OFFICER_DISPLAY_NAME]),
+        'Power_BI_Final_Dataset'[TYPE] = "M",
+        'Power_BI_Final_Dataset'[ASSIGNMENT_FOUND] = TRUE,
+        'Power_BI_Final_Dataset'[OFFICER_DISPLAY_NAME] <> BLANK()
+    )
+VAR TopOfficersTable = 
+    ADDCOLUMNS(
+        AllMovingOfficers,
+        "MovingCount", 
+        CALCULATE(
+            COUNTROWS('Power_BI_Final_Dataset'),
+            'Power_BI_Final_Dataset'[TYPE] = "M",
+            'Power_BI_Final_Dataset'[ASSIGNMENT_FOUND] = TRUE
+        ),
+        "CleanName", [OFFICER_DISPLAY_NAME],
+        "Division",
+        CALCULATE(
+            VALUES('Power_BI_Final_Dataset'[BUREAU]),
+            'Power_BI_Final_Dataset'[TYPE] = "M",
+            'Power_BI_Final_Dataset'[ASSIGNMENT_FOUND] = TRUE
+        )
+    )
+VAR Top5Officers = 
+    TOPN(5, TopOfficersTable, [MovingCount], DESC)
+VAR Result = 
+    CONCATENATEX(
+        Top5Officers,
+        [CleanName] & " (" & [Division] & "): " & [MovingCount],
+        UNICHAR(10),
+        [MovingCount],
+        DESC
+    )
+RETURN Result
+✅ STEP 4: Verification Checklist
+After running both solutions:
+
+Python Script Success Indicators:
+✅ Match rate >85%
+✅ No badge conflicts reported
+✅ Files saved to 03_Staging\Summons\
+✅ Andres Lopez found with Patrol assignment
+M-Code Success Indicators:
+✅ All 5 queries refresh without errors
+✅ Assignment_Quality_Check shows >85% match rate
+✅ Andres_Lopez_Verification shows Patrol assignment
+✅ Power_BI_Final_Dataset loads successfully
+DAX Success Indicators:
+✅ Andres Lopez appears with correct Patrol assignment
+✅ No more "School threat" incorrect assignments
+✅ Each badge maps to exactly one officer
+✅ Top 5 officers show proper division names
+🚨 Common Issues & Solutions
+File Not Found Errors:
+m
+// Update file paths in M-Code Source steps:
+Source = Excel.Workbook(File.Contents("YOUR_ACTUAL_PATH_HERE"), null, true)
+Python Script Errors:
+Ensure Assignment_Master_V2.xlsx is accessible
+Check that court export file exists
+Run with administrator privileges if needed
+Low Match Rates:
+Verify Assignment_Master_V2.xlsx has correct column names
+Check badge number formats match between files
+Ensure no extra spaces or special characters in badge numbers
+🎯 Expected Results
+After successful deployment:
+
+Andres Lopez will show: Patrol Bureau (not School threat)
+Badge conflicts eliminated: Each badge = exactly one officer
+Match rate: >90% for active officers
+DAX measures: Work correctly with proper officer assignments
+Power BI dashboard: Shows accurate officer performance by assignment
+Ready to proceed? Start with the Python script execution and let me know the results!
+
+
+
+
+
+C:\Users\carucci_r># Navigate to your script directory
+'#' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r>cd "C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons"
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons>
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons># Run the script
+'#' is not recognized as an internal or external command,
+operable program or batch file.
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons>python badge_assignment_fix.py
+🔧 FIXING BADGE ASSIGNMENT MAPPING
+==================================================
+📋 Loading Assignment Master V2...
+❌ Error: [Errno 2] No such file or directory: 'C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\_ASSIGNMENTS\\Assignment_Master_V2.xlsx'
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons>
+
+Edit
+I see the issue! The script can't find the Assignment_Master_V2.xlsx file. Let's fix this by locating the correct file path and updating the script.
+
+
+File Finder & Path Updater Script
+Code 
+Let's run this file finder script to locate your Assignment_Master_V2.xlsx file and fix the paths:
+
+cmd
+# In your current directory, run this:
+python -c "
+import os
+from pathlib import Path
+import glob
+
+base_path = Path(r'C:\Users\carucci_r\OneDrive - City of Hackensack')
+print('🔍 Searching for Assignment_Master_V2.xlsx...')
+
+# Search for the file
+for file_path in base_path.glob('**/Assignment_Master_V2.xlsx'):
+    if file_path.exists():
+        print(f'✅ Found: {file_path}')
+
+# Also check for other assignment files
+for file_path in base_path.glob('**/Assignment*.xlsx'):
+    if file_path.exists() and 'Master' in file_path.name:
+        print(f'📄 Alternative: {file_path}')
+
+# Check for court files
+for file_path in base_path.glob('**/*ATS*.xlsx'):
+    if file_path.exists():
+        print(f'📊 Court file: {file_path}')
+        break
+"
+Or create and run the file finder script:
+
+cmd
+# Create the file finder script
+python -c "
+script_content = '''# Find files script
+import os
+from pathlib import Path
+
+base_path = Path(r\"C:\\Users\\carucci_r\\OneDrive - City of Hackensack\")
+print(\"🔍 Searching for files...\")
+
+# Find assignment files
+assignment_files = list(base_path.glob(\"**/Assignment_Master*.xlsx\"))
+if assignment_files:
+    print(f\"✅ Assignment file: {assignment_files[0]}\")
+else:
+    print(\"❌ No Assignment_Master files found\")
+
+# Find court files
+court_files = list(base_path.glob(\"**/*ATS*.xlsx\"))
+if court_files:
+    print(f\"✅ Court file: {court_files[0]}\")
+else:
+    print(\"❌ No ATS court files found\")
+'''
+
+with open('find_files.py', 'w') as f:
+    f.write(script_content)
+print('📄 Created find_files.py')
+"
+
+# Run the file finder
+python find_files.py
+This will tell us:
+
+Where your Assignment_Master_V2.xlsx file actually is
+What court export files are available
+The correct paths to use
+Once we find the files, I'll help you:
+
+Update the badge_assignment_fix.py script with correct paths
+Run the corrected script successfully
+Verify the assignment fix worked
+Run the file finder command above and paste the results! 🔍
+
+
+
+
+
+give navatagion command to to get thnefolder so I can run the script
+
+Edit
+Here are the exact navigation commands to get to your folder and run the script:
+
+🚀 Step-by-Step Navigation Commands
+Option 1: Command Prompt (CMD)
+cmd
+# Open Command Prompt (Windows Key + R, type "cmd", press Enter)
+
+# Navigate to your script folder
+cd "C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons"
+
+# Verify you're in the right location
+dir
+
+# Run the file finder
+python -c "
+from pathlib import Path
+base = Path(r'C:\Users\carucci_r\OneDrive - City of Hackensack')
+print('🔍 Searching for Assignment_Master_V2.xlsx...')
+for f in base.glob('**/Assignment_Master*.xlsx'):
+    print(f'✅ Found: {f}')
+for f in base.glob('**/*ATS*.xlsx'):
+    print(f'📊 Court: {f}')
+    break
+"
+Option 2: PowerShell
+powershell
+# Open PowerShell (Windows Key + X, select "Windows PowerShell")
+
+# Navigate to your script folder
+Set-Location "C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons"
+
+# Check current location
+Get-Location
+
+# Run the file finder
+python -c "
+from pathlib import Path
+base = Path(r'C:\Users\carucci_r\OneDrive - City of Hackensack')
+print('🔍 Searching for files...')
+for f in base.glob('**/Assignment_Master*.xlsx'): print(f'✅ Assignment: {f}')
+for f in base.glob('**/*ATS*.xlsx'): print(f'📊 Court: {f}'); break
+"
+Option 3: Windows Explorer + Shift+Right-Click
+Open File Explorer (Windows Key + E)
+Navigate to: C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons
+Hold Shift + Right-click in empty space
+Select: "Open PowerShell window here" or "Open command window here"
+Run the file finder command
+Option 4: Direct File Explorer
+cmd
+# Open Run dialog (Windows Key + R)
+# Type this path and press Enter:
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons
+🎯 Quick Copy-Paste Commands
+Copy this entire block and paste into Command Prompt:
+
+cmd
+cd "C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons" && python -c "from pathlib import Path; base = Path(r'C:\Users\carucci_r\OneDrive - City of Hackensack'); print('🔍 Searching...'); [print(f'✅ Assignment: {f}') for f in base.glob('**/Assignment_Master*.xlsx')]; [print(f'📊 Court: {f}') for f in list(base.glob('**/*ATS*.xlsx'))[:3]]"
+🔍 What This Will Show You
+The command will output something like:
+
+🔍 Searching...
+✅ Assignment: C:\Users\carucci_r\OneDrive - City of Hackensack\_ASSIGNMENTS\Assignment_Master_V2.xlsx
+📊 Court: C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\24_ALL_ATS.xlsx
+Once you see the file locations, I'll help you update the script with the correct paths!
+
+Which navigation method would you like to use? Copy and paste the commands above and let me know what files it finds! 🚀
+
+
+
+
+
+
+
+
+
+
+
+Claude
+
