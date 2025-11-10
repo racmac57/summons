@@ -1,0 +1,110 @@
+2025-10-14 11:24:01,405 - INFO - ============================================================
+2025-10-14 11:24:01,406 - INFO - SUMMONS MASTER TRANSITION SCRIPT
+2025-10-14 11:24:01,406 - INFO - ============================================================
+2025-10-14 11:24:01,406 - INFO - Rolling 13-Month Window: 2024-09-01 to 2025-09-30
+2025-10-14 11:24:01,421 - INFO - Assignment entries loaded: 163
+2025-10-14 11:24:01,422 - INFO - 
+2025-10-14 11:24:01,422 - INFO - PHASE 1: Loading Historical Data (pre-Sept 2025)
+2025-10-14 11:24:01,422 - INFO - ------------------------------------------------------------
+2025-10-14 11:24:01,422 - INFO - Loading historical court data for 2024-09-01 00:00:00 to 2025-09-30 00:00:00
+2025-10-14 11:24:01,444 - INFO - Processing individual court records from 25_08_ATS.csv
+2025-10-14 11:24:01,457 - INFO -   Filtered 25_08_ATS.csv: 4,091 -> 0 records (pre-2025-09-01)
+2025-10-14 11:24:01,459 - INFO - Processing summary format from 2025_10_09_21_01_02_Hackensack Police Department - Summons Dashboard.csv
+2025-10-14 11:24:01,459 - INFO - Expanding summary data from 2025_10_09_21_01_02_Hackensack Police Department - Summons Dashboard.csv
+2025-10-14 11:24:01,768 - INFO -   Expanded 24 summary rows into 38,019 individual records
+2025-10-14 11:24:01,791 - INFO -   Filtered 2025_10_09_21_01_02_Hackensack Police Department - Summons Dashboard.csv: 38,019 -> 35,587 records (pre-2025-09-01)
+2025-10-14 11:24:01,791 - INFO - Total historical records loaded: 35,587
+2025-10-14 11:24:01,804 - INFO - Historical backfill records: 35,587
+2025-10-14 11:24:01,804 - INFO - 
+2025-10-14 11:24:01,804 - INFO - PHASE 2: Loading E-ticket Data (Sept 2025+)
+2025-10-14 11:24:01,804 - INFO - ------------------------------------------------------------
+2025-10-14 11:24:01,804 - INFO - Loading e-ticket data for 2024-09-01 00:00:00 to 2025-09-30 00:00:00
+2025-10-14 11:24:02,771 - INFO -   Filtered 23_12_e_ticketsexport.csv: 2,528 -> 0 records (2025-09-01+)
+2025-10-14 11:24:04,038 - INFO -   Filtered 24_01_e_ticketsexport.csv: 3,576 -> 0 records (2025-09-01+)
+2025-10-14 11:24:05,752 - INFO -   Filtered 24_02_e_ticketsexport.csv: 3,602 -> 0 records (2025-09-01+)
+2025-10-14 11:24:07,177 - INFO -   Filtered 24_03_e_ticketsexport.csv: 3,499 -> 0 records (2025-09-01+)
+2025-10-14 11:24:07,243 - ERROR - Error loading e-ticket file C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_Summons\E_Ticket\24_04_e_ticketsexport.csv: Error tokenizing data. C error: Expected 105 fields in line 3107, saw 106
+
+2025-10-14 11:24:09,831 - INFO -   Filtered 24_05_e_ticketsexport.csv: 3,445 -> 0 records (2025-09-01+)
+2025-10-14 11:24:09,881 - ERROR - Error loading e-ticket file C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_Summons\E_Ticket\24_06_e_ticketsexport.csv: Error tokenizing data. C error: Expected 105 fields in line 1334, saw 106
+
+2025-10-14 11:24:11,302 - INFO -   Filtered 24_07_e_ticketsexport.csv: 3,390 -> 0 records (2025-09-01+)
+2025-10-14 11:24:12,433 - INFO -   Filtered 24_08_e_ticketexport.csv: 2,523 -> 0 records (2025-09-01+)
+2025-10-14 11:24:13,728 - INFO -   Filtered 24_09_e_ticketexport.csv: 3,193 -> 0 records (2025-09-01+)
+2025-10-14 11:24:15,261 - INFO -   Filtered 24_10_e_ticketexport.csv: 3,153 -> 0 records (2025-09-01+)
+2025-10-14 11:24:17,076 - INFO -   Filtered 24_11_e_ticketexport.csv: 2,840 -> 0 records (2025-09-01+)
+2025-10-14 11:24:18,824 - INFO -   Filtered 24_12_e_ticketexport.csv: 2,838 -> 0 records (2025-09-01+)
+2025-10-14 11:24:18,916 - ERROR - Error loading e-ticket file C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_Summons\E_Ticket\25_01_e_ticketexport.csv: Error tokenizing data. C error: Expected 105 fields in line 3171, saw 106
+
+2025-10-14 11:24:20,651 - INFO -   Filtered 25_02_e_ticketexport.csv: 2,741 -> 0 records (2025-09-01+)
+2025-10-14 11:24:23,988 - INFO -   Filtered 25_03_e_ticketexport.csv: 3,628 -> 0 records (2025-09-01+)
+2025-10-14 11:24:25,950 - INFO -   Filtered 25_04_e_ticketexport.csv: 3,692 -> 0 records (2025-09-01+)
+2025-10-14 11:24:27,668 - INFO -   Filtered 25_05_e_ticketexport.csv: 3,497 -> 0 records (2025-09-01+)
+2025-10-14 11:24:29,455 - INFO -   Filtered 25_06_e_ticketexport.csv: 3,389 -> 0 records (2025-09-01+)
+2025-10-14 11:24:29,527 - ERROR - Error loading e-ticket file C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_Summons\E_Ticket\25_07_e_ticketexport.csv: Error tokenizing data. C error: Expected 105 fields in line 598, saw 106
+
+2025-10-14 11:24:32,292 - INFO -   Filtered 25_08_e_ticketexport.csv: 4,345 -> 10 records (2025-09-01+)
+2025-10-14 11:24:35,278 - INFO -   Filtered 25_09_e_ticketexport.csv: 4,599 -> 4,390 records (2025-09-01+)
+2025-10-14 11:24:38,094 - INFO -   Filtered 25_09_e_ticketexport.csv: 4,599 -> 4,390 records (2025-09-01+)
+2025-10-14 11:24:38,095 - INFO - Total e-ticket records loaded: 8,790
+2025-10-14 11:24:38,103 - INFO - E-ticket current records: 8,790
+2025-10-14 11:24:38,103 - INFO - 
+2025-10-14 11:24:38,103 - INFO - PHASE 3: Combining and Processing Data
+2025-10-14 11:24:38,103 - INFO - ------------------------------------------------------------
+2025-10-14 11:24:38,114 - INFO - Combined records before deduplication: 44,377
+2025-10-14 11:24:38,137 - INFO - Combined records after deduplication: 39,987
+2025-10-14 11:24:39,953 - INFO - Assignment merge completed. Rows without officer display after merge: 391,472
+2025-10-14 11:24:42,923 - INFO - Classification reasons: {'FALLBACK:PARKING': 376371, 'CODE:TITLE39': 54621, 'DESC:PARKING': 422, 'ORD:PARKING_LIST': 21, 'DESC:SPECIAL': 9}
+2025-10-14 11:24:43,634 - INFO - PEO/Class I pre-check — potential M→P candidates: 0
+2025-10-14 11:24:43,839 - INFO - PEO/Class I rule — eligible to flip from M→P: 0; flipped: 0
+2025-10-14 11:24:44,403 - INFO - 
+2025-10-14 11:24:44,404 - INFO - PHASE 4: Data Validation
+2025-10-14 11:24:44,404 - INFO - ------------------------------------------------------------
+2025-10-14 11:24:44,404 - INFO - ============================================================
+2025-10-14 11:24:44,404 - INFO - VALIDATION: Date Range Check
+2025-10-14 11:24:44,404 - INFO - ============================================================
+2025-10-14 11:24:44,404 - INFO - Historical data range: 2024-09-01 to 2025-08-28
+2025-10-14 11:24:44,405 - INFO - E-ticket data range: 2025-09-01 to 2025-09-29
+2025-10-14 11:24:44,405 - INFO - Transition cutoff: 2025-09-01
+2025-10-14 11:24:44,405 - INFO - ✓ Date ranges validated - no overlaps detected
+2025-10-14 11:24:44,406 - INFO - ============================================================
+2025-10-14 11:24:44,406 - INFO - ============================================================
+2025-10-14 11:24:44,406 - INFO - VALIDATION: Record Counts
+2025-10-14 11:24:44,406 - INFO - ============================================================
+2025-10-14 11:24:44,406 - INFO - Total records: 431,444
+2025-10-14 11:24:44,433 - INFO - Records by source:
+2025-10-14 11:24:44,434 - INFO -   HISTORICAL_BACKFILL: 427,044 (99.0%)
+2025-10-14 11:24:44,435 - INFO -   ETICKET_CURRENT: 4,400 (1.0%)
+2025-10-14 11:24:44,440 - INFO - Records by TYPE:
+2025-10-14 11:24:44,442 - INFO -   P: 376,814 (87.3%)
+2025-10-14 11:24:44,442 - INFO -   M: 54,621 (12.7%)
+2025-10-14 11:24:44,442 - INFO -   C: 9 (0.0%)
+2025-10-14 11:24:44,442 - INFO - ============================================================
+2025-10-14 11:24:44,442 - INFO - ============================================================
+2025-10-14 11:24:44,443 - INFO - VALIDATION: Data Quality
+2025-10-14 11:24:44,443 - INFO - ============================================================
+2025-10-14 11:24:44,468 - WARNING - Found 391,457 duplicate ticket numbers
+2025-10-14 11:24:44,470 - INFO - ✓ All dates parsed successfully
+2025-10-14 11:24:44,684 - INFO - Records with unknown officer: 391,457 (90.7%)
+2025-10-14 11:24:44,684 - INFO - ✓ All required columns present
+2025-10-14 11:24:44,685 - INFO - ============================================================
+2025-10-14 11:24:44,685 - INFO - 
+2025-10-14 11:24:44,685 - INFO - PHASE 5: Creating Summary Reports
+2025-10-14 11:24:44,685 - INFO - ------------------------------------------------------------
+2025-10-14 11:24:44,736 - INFO - 
+2025-10-14 11:24:44,736 - INFO - PHASE 6: Writing Output Files
+2025-10-14 11:24:44,736 - INFO - ------------------------------------------------------------
+2025-10-14 11:24:44,738 - INFO - Removed existing file: C:\Users\carucci_r\OneDrive - City of Hackensack\03_Staging\Summons\summons_powerbi_latest.xlsx
+2025-10-14 11:31:35,434 - INFO - ✓ Main output file written: C:\Users\carucci_r\OneDrive - City of Hackensack\03_Staging\Summons\summons_powerbi_latest.xlsx
+2025-10-14 11:36:35,965 - INFO - ✓ Archive file written: C:\Users\carucci_r\OneDrive - City of Hackensack\03_Staging\Summons\summons_powerbi_transition_2025_10.xlsx
+2025-10-14 11:36:36,151 - INFO - Summary written: C:\Users\carucci_r\OneDrive - City of Hackensack\03_Staging\Summons\summons_transition_summary_202510.md
+2025-10-14 11:36:36,152 - INFO - Changelog written: C:\Users\carucci_r\OneDrive - City of Hackensack\03_Staging\Summons\summons_transition_changelog_20251014_113635.txt
+2025-10-14 11:36:36,152 - INFO - 
+2025-10-14 11:36:36,153 - INFO - ============================================================
+2025-10-14 11:36:36,153 - INFO - EXECUTION COMPLETE
+2025-10-14 11:36:36,153 - INFO - ============================================================
+2025-10-14 11:36:36,153 - INFO - Historical backfill records: 35,587
+2025-10-14 11:36:36,153 - INFO - E-ticket current records: 8,790
+2025-10-14 11:36:36,153 - INFO - Total final records: 431,444
+2025-10-14 11:36:36,153 - INFO - Output file: C:\Users\carucci_r\OneDrive - City of Hackensack\03_Staging\Summons\summons_powerbi_latest.xlsx
+2025-10-14 11:36:36,153 - INFO - ============================================================

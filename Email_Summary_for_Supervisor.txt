@@ -1,0 +1,32 @@
+Subject: Resolution - Summons Data Duplication Issue in Power BI Dashboard
+
+Good afternoon,
+
+I wanted to update you on an issue I identified and resolved with our summons data that was affecting the Power BI dashboard.
+
+ISSUE IDENTIFIED:
+After our most recent data refresh, I noticed that historical summons counts from September 2024 through August 2025 were appearing approximately twice as high as they should be. For example, September 2024 moving violations showed 926 tickets instead of the correct 463.
+
+ROOT CAUSE:
+Our data processing script was inadvertently loading the same historical period from two different source files. Both files contained overlapping data for September 2024 through August 2025, which caused the system to count each month's tickets twice when aggregating the totals in Power BI.
+
+RESOLUTION:
+I modified the data processing script to load historical data from only one authoritative source file, eliminating the duplication. The current month's data (September 2025) from our e-ticket system was not affected and remains accurate.
+
+VERIFICATION:
+I've confirmed the fix is working correctly:
+- September 2024 moving violations: Now correctly shows 463 (previously showed 926)
+- September 2024 parking violations: Now correctly shows 2,566 (previously showed 4,669)
+- All historical months from September 2024 through August 2025 now display accurate counts
+
+NEXT STEPS:
+The corrected data is ready in the system. When you next open the Power BI dashboard, simply refresh the data to see the accurate historical figures. No changes are needed to the dashboard itself or your normal workflow. Future monthly updates will continue as usual with the corrected process.
+
+IMPACT:
+This fix ensures our summons reporting provides accurate historical trends for performance analysis, resource allocation decisions, and compliance reporting.
+
+Please let me know if you have any questions or would like me to walk through the corrected dashboard data with you.
+
+Best regards,
+[Your Name]
+

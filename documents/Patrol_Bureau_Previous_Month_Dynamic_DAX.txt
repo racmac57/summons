@@ -1,0 +1,187 @@
+// 🕒 2025-09-08-16-05-00
+// Dynamic DAX Measures for Patrol Bureau Previous Month Summons
+// Author: R. A. Carucci
+// Purpose: Calculate parking and moving summons totals for Patrol Bureau for the previous month (dynamic)
+
+// ==========================================
+// DYNAMIC PREVIOUS MONTH SUMMONS TOTALS
+// ==========================================
+
+// Total Parking Summons - Patrol Bureau - Previous Month (Dynamic)
+Patrol_Bureau_Parking_Previous_Month = 
+VAR CurrentDate = TODAY()
+VAR PreviousMonth = EOMONTH(CurrentDate, -1)
+VAR PreviousMonthStart = EOMONTH(CurrentDate, -2) + 1
+VAR PreviousMonthEnd = EOMONTH(CurrentDate, -1)
+VAR PreviousYear = YEAR(PreviousMonth)
+VAR PreviousMonthNum = MONTH(PreviousMonth)
+RETURN
+CALCULATE(
+    COUNTROWS('ATS_Court_Data'),
+    'ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'ATS_Court_Data'[TYPE] = "P",
+    'ATS_Court_Data'[Year] = PreviousYear,
+    'ATS_Court_Data'[Month] = PreviousMonthNum
+)
+
+// Total Moving Summons - Patrol Bureau - Previous Month (Dynamic)
+Patrol_Bureau_Moving_Previous_Month = 
+VAR CurrentDate = TODAY()
+VAR PreviousMonth = EOMONTH(CurrentDate, -1)
+VAR PreviousMonthStart = EOMONTH(CurrentDate, -2) + 1
+VAR PreviousMonthEnd = EOMONTH(CurrentDate, -1)
+VAR PreviousYear = YEAR(PreviousMonth)
+VAR PreviousMonthNum = MONTH(PreviousMonth)
+RETURN
+CALCULATE(
+    COUNTROWS('ATS_Court_Data'),
+    'ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'ATS_Court_Data'[TYPE] = "M",
+    'ATS_Court_Data'[Year] = PreviousYear,
+    'ATS_Court_Data'[Month] = PreviousMonthNum
+)
+
+// Combined Total - Patrol Bureau - Previous Month (Dynamic)
+Patrol_Bureau_Total_Previous_Month = 
+VAR CurrentDate = TODAY()
+VAR PreviousMonth = EOMONTH(CurrentDate, -1)
+VAR PreviousYear = YEAR(PreviousMonth)
+VAR PreviousMonthNum = MONTH(PreviousMonth)
+RETURN
+CALCULATE(
+    COUNTROWS('ATS_Court_Data'),
+    'ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'ATS_Court_Data'[TYPE] IN {"P", "M"},
+    'ATS_Court_Data'[Year] = PreviousYear,
+    'ATS_Court_Data'[Month] = PreviousMonthNum
+)
+
+// ==========================================
+// ALTERNATIVE USING ISSUE_DATE (More Reliable)
+// ==========================================
+
+// Total Parking Summons - Patrol Bureau - Previous Month (Date-based)
+Patrol_Bureau_Parking_Previous_Month_Date = 
+VAR CurrentDate = TODAY()
+VAR PreviousMonthStart = EOMONTH(CurrentDate, -2) + 1
+VAR PreviousMonthEnd = EOMONTH(CurrentDate, -1)
+RETURN
+CALCULATE(
+    COUNTROWS('ATS_Court_Data'),
+    'ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'ATS_Court_Data'[TYPE] = "P",
+    'ATS_Court_Data'[ISSUE_DATE] >= PreviousMonthStart,
+    'ATS_Court_Data'[ISSUE_DATE] <= PreviousMonthEnd
+)
+
+// Total Moving Summons - Patrol Bureau - Previous Month (Date-based)
+Patrol_Bureau_Moving_Previous_Month_Date = 
+VAR CurrentDate = TODAY()
+VAR PreviousMonthStart = EOMONTH(CurrentDate, -2) + 1
+VAR PreviousMonthEnd = EOMONTH(CurrentDate, -1)
+RETURN
+CALCULATE(
+    COUNTROWS('ATS_Court_Data'),
+    'ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'ATS_Court_Data'[TYPE] = "M",
+    'ATS_Court_Data'[ISSUE_DATE] >= PreviousMonthStart,
+    'ATS_Court_Data'[ISSUE_DATE] <= PreviousMonthEnd
+)
+
+// Combined Total - Patrol Bureau - Previous Month (Date-based)
+Patrol_Bureau_Total_Previous_Month_Date = 
+VAR CurrentDate = TODAY()
+VAR PreviousMonthStart = EOMONTH(CurrentDate, -2) + 1
+VAR PreviousMonthEnd = EOMONTH(CurrentDate, -1)
+RETURN
+CALCULATE(
+    COUNTROWS('ATS_Court_Data'),
+    'ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'ATS_Court_Data'[TYPE] IN {"P", "M"},
+    'ATS_Court_Data'[ISSUE_DATE] >= PreviousMonthStart,
+    'ATS_Court_Data'[ISSUE_DATE] <= PreviousMonthEnd
+)
+
+// ==========================================
+// DISPLAY LABELS (For Visual Titles)
+// ==========================================
+
+// Previous Month Label (e.g., "August 2025")
+Previous_Month_Label = 
+VAR CurrentDate = TODAY()
+VAR PreviousMonth = EOMONTH(CurrentDate, -1)
+VAR PreviousYear = YEAR(PreviousMonth)
+VAR PreviousMonthNum = MONTH(PreviousMonth)
+VAR MonthName = FORMAT(PreviousMonth, "mmmm")
+RETURN
+MonthName & " " & PreviousYear
+
+// Previous Month Short Label (e.g., "Aug 2025")
+Previous_Month_Short_Label = 
+VAR CurrentDate = TODAY()
+VAR PreviousMonth = EOMONTH(CurrentDate, -1)
+RETURN
+FORMAT(PreviousMonth, "mmm yyyy")
+
+// ==========================================
+// COMPREHENSIVE MEASURE WITH LABEL
+// ==========================================
+
+// Parking Summons with Label
+Patrol_Bureau_Parking_Previous_Month_With_Label = 
+VAR CurrentDate = TODAY()
+VAR PreviousMonthStart = EOMONTH(CurrentDate, -2) + 1
+VAR PreviousMonthEnd = EOMONTH(CurrentDate, -1)
+VAR PreviousMonthLabel = FORMAT(PreviousMonthEnd, "mmm yyyy")
+VAR ParkingCount = CALCULATE(
+    COUNTROWS('ATS_Court_Data'),
+    'ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'ATS_Court_Data'[TYPE] = "P",
+    'ATS_Court_Data'[ISSUE_DATE] >= PreviousMonthStart,
+    'ATS_Court_Data'[ISSUE_DATE] <= PreviousMonthEnd
+)
+RETURN
+PreviousMonthLabel & ": " & ParkingCount & " Parking Summons"
+
+// Moving Summons with Label
+Patrol_Bureau_Moving_Previous_Month_With_Label = 
+VAR CurrentDate = TODAY()
+VAR PreviousMonthStart = EOMONTH(CurrentDate, -2) + 1
+VAR PreviousMonthEnd = EOMONTH(CurrentDate, -1)
+VAR PreviousMonthLabel = FORMAT(PreviousMonthEnd, "mmm yyyy")
+VAR MovingCount = CALCULATE(
+    COUNTROWS('ATS_Court_Data'),
+    'ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'ATS_Court_Data'[TYPE] = "M",
+    'ATS_Court_Data'[ISSUE_DATE] >= PreviousMonthStart,
+    'ATS_Court_Data'[ISSUE_DATE] <= PreviousMonthEnd
+)
+RETURN
+PreviousMonthLabel & ": " & MovingCount & " Moving Summons"
+
+// ==========================================
+// USAGE INSTRUCTIONS
+// ==========================================
+
+/*
+DYNAMIC BEHAVIOR:
+- Today is September 8, 2025 → Shows August 2025 data
+- Today is October 15, 2025 → Shows September 2025 data
+- Today is January 3, 2026 → Shows December 2025 data
+
+RECOMMENDED MEASURES TO USE:
+1. Patrol_Bureau_Parking_Previous_Month_Date (most reliable)
+2. Patrol_Bureau_Moving_Previous_Month_Date (most reliable)
+3. Previous_Month_Label (for visual titles)
+
+VISUAL SETUP EXAMPLE:
+- Card 1: Patrol_Bureau_Parking_Previous_Month_Date
+- Card 2: Patrol_Bureau_Moving_Previous_Month_Date
+- Title: "Patrol Bureau Summons - " & [Previous_Month_Label]
+
+HOW IT WORKS:
+- EOMONTH(TODAY(), -1) gets the last day of previous month
+- EOMONTH(TODAY(), -2) + 1 gets the first day of previous month
+- Automatically handles year transitions (Dec → Jan)
+- Automatically handles different month lengths
+*/

@@ -1,0 +1,27 @@
+Top_5_Moving_Subtitle_New = 
+VAR MaxYearMonthKey = 
+    CALCULATE(
+        MAX( ATS_Court_Data[YearMonthKey] ),
+        ATS_Court_Data[TYPE] = "M"
+        // Removed WG2 filters to get the true latest month
+    )
+VAR MaxDate = 
+    CALCULATE(
+        MAX( ATS_Court_Data[ISSUE_DATE] ),
+        ATS_Court_Data[TYPE] = "M",
+        ATS_Court_Data[YearMonthKey] = MaxYearMonthKey
+        // Removed WG2 filters
+    )
+VAR MonthName = FORMAT( MaxDate, "MMMM" )
+VAR YearValue = YEAR( MaxDate )
+VAR TotalMoving =
+    CALCULATE(
+        COUNTROWS( ATS_Court_Data ),
+        ATS_Court_Data[TYPE] = "M",
+        ATS_Court_Data[YearMonthKey] = MaxYearMonthKey
+        // Removed WG2 filters to count ALL moving violations
+    )
+RETURN
+"Department-wide moving violations (" &
+    MonthName & " " & YearValue & ") – " &
+    FORMAT( TotalMoving, "#,0" ) & " total tickets"

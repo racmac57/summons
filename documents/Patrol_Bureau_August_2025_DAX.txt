@@ -1,0 +1,118 @@
+// 🕒 2025-09-08-16-00-00
+// DAX Measures for Patrol Bureau August 2025 Summons
+// Author: R. A. Carucci
+// Purpose: Calculate parking and moving summons totals for Patrol Bureau in August 2025
+
+// ==========================================
+// PATROL BUREAU AUGUST 2025 SUMMONS TOTALS
+// ==========================================
+
+// Total Parking Summons - Patrol Bureau - August 2025
+Patrol_Bureau_Parking_August_2025 = 
+CALCULATE(
+    COUNTROWS('ATS_Court_Data'),
+    'ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'ATS_Court_Data'[TYPE] = "P",
+    'ATS_Court_Data'[Year] = 2025,
+    'ATS_Court_Data'[Month] = 8
+)
+
+// Total Moving Summons - Patrol Bureau - August 2025
+Patrol_Bureau_Moving_August_2025 = 
+CALCULATE(
+    COUNTROWS('ATS_Court_Data'),
+    'ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'ATS_Court_Data'[TYPE] = "M",
+    'ATS_Court_Data'[Year] = 2025,
+    'ATS_Court_Data'[Month] = 8
+)
+
+// Combined Total - Patrol Bureau - August 2025
+Patrol_Bureau_Total_August_2025 = 
+CALCULATE(
+    COUNTROWS('ATS_Court_Data'),
+    'ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'ATS_Court_Data'[TYPE] IN {"P", "M"},
+    'ATS_Court_Data'[Year] = 2025,
+    'ATS_Court_Data'[Month] = 8
+)
+
+// ==========================================
+// ALTERNATIVE USING ISSUE_DATE (if Year/Month columns don't exist)
+// ==========================================
+
+// Total Parking Summons - Patrol Bureau - August 2025 (Date-based)
+Patrol_Bureau_Parking_August_2025_Date = 
+CALCULATE(
+    COUNTROWS('ATS_Court_Data'),
+    'ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'ATS_Court_Data'[TYPE] = "P",
+    'ATS_Court_Data'[ISSUE_DATE] >= DATE(2025, 8, 1),
+    'ATS_Court_Data'[ISSUE_DATE] <= DATE(2025, 8, 31)
+)
+
+// Total Moving Summons - Patrol Bureau - August 2025 (Date-based)
+Patrol_Bureau_Moving_August_2025_Date = 
+CALCULATE(
+    COUNTROWS('ATS_Court_Data'),
+    'ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'ATS_Court_Data'[TYPE] = "M",
+    'ATS_Court_Data'[ISSUE_DATE] >= DATE(2025, 8, 1),
+    'ATS_Court_Data'[ISSUE_DATE] <= DATE(2025, 8, 31)
+)
+
+// ==========================================
+// DYNAMIC VERSION (Current Month)
+// ==========================================
+
+// Total Parking Summons - Patrol Bureau - Current Month
+Patrol_Bureau_Parking_Current_Month = 
+VAR CurrentYear = YEAR(TODAY())
+VAR CurrentMonth = MONTH(TODAY())
+RETURN
+CALCULATE(
+    COUNTROWS('ATS_Court_Data'),
+    'ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'ATS_Court_Data'[TYPE] = "P",
+    'ATS_Court_Data'[Year] = CurrentYear,
+    'ATS_Court_Data'[Month] = CurrentMonth
+)
+
+// Total Moving Summons - Patrol Bureau - Current Month
+Patrol_Bureau_Moving_Current_Month = 
+VAR CurrentYear = YEAR(TODAY())
+VAR CurrentMonth = MONTH(TODAY())
+RETURN
+CALCULATE(
+    COUNTROWS('ATS_Court_Data'),
+    'ATS_Court_Data'[WG2] = "Patrol Bureau",
+    'ATS_Court_Data'[TYPE] = "M",
+    'ATS_Court_Data'[Year] = CurrentYear,
+    'ATS_Court_Data'[Month] = CurrentMonth
+)
+
+// ==========================================
+// USAGE INSTRUCTIONS
+// ==========================================
+
+/*
+INSTRUCTIONS:
+1. Copy the DAX measures above into your Power BI report
+2. Use the measures in cards, tables, or other visuals
+3. Choose the version that works best:
+   - Use Year/Month columns if they exist in your data
+   - Use ISSUE_DATE version if Year/Month columns don't exist
+   - Use Current Month version for dynamic current month reporting
+
+EXAMPLE VISUAL SETUP:
+- Create a card visual
+- Add "Patrol_Bureau_Parking_August_2025" as the value
+- Add "Patrol_Bureau_Moving_August_2025" as another card
+- Add "Patrol_Bureau_Total_August_2025" for combined total
+
+FILTERING NOTES:
+- WG2 = "Patrol Bureau" filters to Patrol Bureau only
+- TYPE = "P" for Parking summons
+- TYPE = "M" for Moving summons
+- Year = 2025, Month = 8 for August 2025
+*/

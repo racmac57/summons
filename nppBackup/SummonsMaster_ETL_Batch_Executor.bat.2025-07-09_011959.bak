@@ -1,0 +1,90 @@
+@echo off
+REM 🕒 2025-07-09-15-50-00
+REM Project: SummonsMaster_ETL_Batch_Executor
+REM Author: R. A. Carucci
+REM Purpose: Execute SummonsMaster ETL workflow with error handling and logging
+
+echo.
+echo ========================================
+echo    SUMMONS MASTER ETL WORKFLOW
+echo ========================================
+echo.
+
+REM Set script directory
+cd /d "%~dp0"
+
+REM Create logs directory if it doesn't exist
+if not exist "logs" mkdir logs
+
+REM Set log file with timestamp
+for /f "tokens=2 delims==" %%a in ('wmic OS Get localdatetime /value') do set "dt=%%a"
+set "YY=%dt:~2,2%" & set "YYYY=%dt:~0,4%" & set "MM=%dt:~4,2%" & set "DD=%dt:~6,2%"
+set "HH=%dt:~8,2%" & set "Min=%dt:~10,2%" & set "Sec=%dt:~12,2%"
+set "timestamp=%YYYY%-%MM%-%DD%_%HH%-%Min%-%Sec%"
+set "logfile=logs\summons_etl_%timestamp%.log"
+
+echo Starting SummonsMaster ETL at %date% %time%
+echo Log file: %logfile%
+echo.
+
+REM Check if Python is installed
+python --version >nul 2>&1
+if errorlevel 1 (
+    echo ❌ ERROR: Python is not installed or not in PATH
+    echo Please install Python 3.7+ and try again
+    pause
+    exit /b 1
+)
+
+REM Check if required packages are installed
+echo 🔍 Checking Python dependencies...
+python -c "import pandas, numpy, openpyxl" 2>nul
+if errorlevel 1 (
+    echo ⚠️  Missing required packages. Installing...
+    pip install pandas numpy openpyxl
+    if errorlevel 1 (
+        echo ❌ ERROR: Failed to install required packages
+        echo Please run: pip install pandas numpy openpyxl
+        pause
+        exit /b 1
+    )
+)
+
+REM Run the ETL script with logging
+echo 🚀 Executing SummonsMaster ETL...
+echo.
+python summons_etl.py 2>&1 | tee "%logfile%"
+
+REM Check exit code
+if errorlevel 1 (
+    echo.
+    echo ❌ ETL FAILED - Check log file: %logfile%
+    echo.
+    pause
+    exit /b 1
+) else (
+    echo.
+    echo ✅ ETL COMPLETED SUCCESSFULLY!
+    echo.
+    echo 📁 Output files saved to:
+    echo    C:\Users\carucci_r\OneDrive - City of Hackensack\_MONTHLY_DATA\_PROCESSED\Summons\
+    echo.
+    echo 📊 Power BI Files Ready:
+    echo    • SummonsMaster_PowerBI_Ready.xlsx
+    echo    • Officer_Performance_Summary.xlsx
+    echo    • Complete_Enforcement_Dataset.xlsx
+    echo.
+    echo 📝 Log saved to: %logfile%
+    echo.
+)
+
+REM Ask if user wants to open output folder
+echo.
+set /p "open=Open output folder? (y/n): "
+if /i "%open%"=="y" (
+    start "" "C:\Users\carucci_r\OneDrive - City of Hackensack\_MONTHLY_DATA\_PROCESSED\Summons"
+)
+
+echo.
+echo Press any key to exit...
+pause >nul

@@ -1,0 +1,18 @@
+2025-06-28 19:58:36,494 - INFO - Starting Summons ETL Process v2.0
+2025-06-28 19:58:36,512 - ERROR - Error loading Assignment Master: [Errno 2] No such file or directory: 'C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\01_SourceData\\Assignment_Master.xlsx'
+2025-06-28 19:58:36,513 - ERROR - Error processing summons file: [Errno 2] No such file or directory: 'C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\01_SourceData\\Summons\\SUMMONS_MASTER.xlsx'
+2025-06-28 19:58:36,514 - ERROR - Error processing ATS report: [Errno 2] No such file or directory: 'C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\01_SourceData\\ATS\\2025_04_ATS_Report.xlsx'
+2025-06-28 19:58:36,517 - WARNING - No valid datasets found
+2025-06-28 19:58:36,517 - ERROR - ETL process failed - no data processed
+2025-06-28 20:00:33,798 - INFO - Starting Summons ETL Process v2.0
+2025-06-28 20:00:33,819 - ERROR - Error loading Assignment Master: [Errno 2] No such file or directory: 'C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\01_SourceData\\Assignment_Master.xlsx'
+2025-06-28 20:00:33,820 - ERROR - Error processing summons file: [Errno 2] No such file or directory: 'C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\01_SourceData\\Summons\\SUMMONS_MASTER.xlsx'
+2025-06-28 20:00:33,821 - ERROR - Error processing ATS report: [Errno 2] No such file or directory: 'C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\01_SourceData\\ATS\\2025_04_ATS_Report.xlsx'
+2025-06-28 20:00:33,821 - WARNING - No valid datasets found
+2025-06-28 20:00:33,822 - ERROR - ETL process failed - no data processed
+2025-08-13 14:23:09,946 - INFO - Starting Summons ETL Process v2.0
+2025-08-13 14:23:09,971 - ERROR - Error loading Assignment Master: [Errno 2] No such file or directory: 'C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\01_SourceData\\Assignment_Master.xlsx'
+2025-08-13 14:23:09,972 - ERROR - Error processing summons file: [Errno 2] No such file or directory: 'C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\01_SourceData\\Summons\\SUMMONS_MASTER.xlsx'
+2025-08-13 14:23:09,973 - ERROR - Error processing ATS report: [Errno 2] No such file or directory: 'C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\01_SourceData\\ATS\\2025_04_ATS_Report.xlsx'
+2025-08-13 14:23:09,973 - WARNING - No valid datasets found
+2025-08-13 14:23:09,974 - ERROR - ETL process failed - no data processed

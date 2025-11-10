@@ -1,0 +1,66 @@
+# 🕒 2025-06-28-20-30-00
+# Project: Police_Analytics_Dashboard/production_config
+# Author: R. A. Carucci
+# Purpose: Production configuration matching refactored ETL scripts
+
+# Data source paths (matching your actual file locations)
+data_sources:
+  assignment_master: "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\_Hackensack_Data_Repository\\ASSIGNED_SHIFT\\Assignment_Master.xlsm"
+  summons_master: "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\_EXPORTS\\Summons\\Court\\SUMMONS_MASTER.xlsx"
+  summons_court_folder: "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\_EXPORTS\\Summons\\Court"
+  ats_reports_folder: "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\_EXPORTS\\ATS"
+
+# Output paths for processed data
+outputs:
+  summons_enriched: "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\03_Staging\\Summons\\summons_enriched.xlsx"
+  summons_powerbi: "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\03_Staging\\Summons\\summons_powerbi_latest.xlsx"
+  fact_table: "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\03_Staging\\Summons\\fact_summons.xlsx"
+  officer_dim: "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\03_Staging\\Summons\\dim_officers.xlsx"
+
+# Staging and PowerBI paths
+staging:
+  base_path: "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\03_Staging"
+  summons: "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\03_Staging\\Summons"
+
+powerbi:
+  summons_dashboard: "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\04_PowerBI\\Summons_Dashboard"
+  data_connections: "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\03_Staging\\Summons\\summons_powerbi_latest.xlsx"
+
+# Processing settings
+processing:
+  fuzzy_match_threshold: 75
+  badge_padding_length: 4
+  min_quality_score: 60
+  rolling_months: 12
+
+# Column mappings for different data sources
+column_mappings:
+  summons:
+    badge: ["BADGE_NUMBER", "Badge", "Badge Number", "Badge #"]
+    officer: ["OFFICER_NAME", "Officer", "Officer Name", "Officer_Name"]
+    violation: ["VIOLATION", "Violation", "Violation Code", "Statute"]
+    date: ["DATE", "Date", "Issue Date", "Violation Date"]
+    amount: ["AMOUNT", "Amount", "Fine", "Fine Amount"]
+  
+  assignment:
+    badge: "PADDED_BADGE_NUMBER"
+    first_name: "FIRST_NAME"
+    last_name: "LAST_NAME"
+    full_name: "FULL_NAME"
+    division: "DIVISION"
+    bureau: "BUREAU"
+
+# Data validation rules
+validation:
+  required_columns:
+    summons: ["BADGE_NUMBER", "OFFICER_NAME"]
+    assignment: ["PADDED_BADGE_NUMBER", "FULL_NAME"]
+  min_records: 10
+  max_missing_percentage: 25
+
+# Logging configuration
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(levelname)s - %(message)s"
+  file_path: "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\02_ETL_Scripts\\Logs"
+  max_files: 10

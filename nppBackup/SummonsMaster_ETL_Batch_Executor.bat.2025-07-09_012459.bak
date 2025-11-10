@@ -1,0 +1,44 @@
+@echo off
+
+echo.
+echo ==========================================
+echo       SUMMONS MASTER ETL - SIMPLE
+echo ==========================================
+echo.
+
+REM Show current directory
+echo Current directory: %cd%
+echo.
+
+REM Check if Python script exists
+if exist "summons_etl.py" (
+    echo ✅ Found summons_etl.py
+) else (
+    echo ❌ summons_etl.py not found in current directory
+    echo Please make sure both .bat and .py files are in the same folder
+    pause
+    exit
+)
+
+REM Basic Python check
+echo Checking Python...
+python --version
+if errorlevel 1 (
+    echo ERROR: Python not found
+    pause
+    exit
+)
+
+echo.
+echo Installing required packages...
+pip install pandas numpy openpyxl
+
+echo.
+echo Running ETL script...
+python summons_etl.py
+
+echo.
+echo Done! Check for output files in:
+echo C:\Users\carucci_r\OneDrive - City of Hackensack\_MONTHLY_DATA\_PROCESSED\Summons\
+
+pause

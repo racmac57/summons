@@ -1,0 +1,52 @@
+2025-06-28 19:34:54,259 - INFO - Loading Assignment Master from: C:\Users\carucci_r\OneDrive - City of Hackensack\_Hackensack_Data_Repository\ASSIGNED_SHIFT\Assignment_Master.xlsm
+2025-06-28 19:34:54,832 - INFO - Successfully loaded 151 officer records
+2025-06-28 19:34:54,833 - INFO - Starting complete summons data processing...
+2025-06-28 19:34:54,836 - INFO - Found 5 potential summons files
+2025-06-28 19:34:54,836 - INFO -   - C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\2025_04_ATS_Report.xlsx
+2025-06-28 19:34:54,837 - INFO -   - C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\2025_05_Monthly PD Report May 2025 2.xlsx
+2025-06-28 19:34:54,837 - INFO -   - C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\25_01_ATS_Monthly PD Report Jan 2025.xlsx
+2025-06-28 19:34:54,838 - INFO -   - C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\25_02ATSReport.xlsx
+2025-06-28 19:34:54,838 - INFO -   - C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\25_03ATSReport.xlsx
+2025-06-28 19:34:54,838 - INFO - Processing summons file: C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\2025_04_ATS_Report.xlsx
+2025-06-28 19:34:54,924 - INFO - Available sheets: ['Sheet1']
+2025-06-28 19:34:55,817 - INFO - Using sheet 'Sheet1' with 3552 rows
+2025-06-28 19:34:55,911 - INFO - Processing summons file: C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\2025_05_Monthly PD Report May 2025 2.xlsx
+2025-06-28 19:34:56,003 - INFO - Available sheets: ['Sheet1', 'Sheet2']
+2025-06-28 19:34:56,837 - INFO - Using sheet 'Sheet1' with 3377 rows
+2025-06-28 19:34:56,898 - INFO - Processing summons file: C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\25_01_ATS_Monthly PD Report Jan 2025.xlsx
+2025-06-28 19:34:57,025 - INFO - Available sheets: ['Sheet1']
+2025-06-28 19:34:57,784 - INFO - Using sheet 'Sheet1' with 3231 rows
+2025-06-28 19:34:57,850 - INFO - Processing summons file: C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\25_02ATSReport.xlsx
+2025-06-28 19:34:57,982 - INFO - Available sheets: ['Sheet1']
+2025-06-28 19:34:58,659 - INFO - Using sheet 'Sheet1' with 2741 rows
+2025-06-28 19:34:58,717 - INFO - Processing summons file: C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\25_03ATSReport.xlsx
+2025-06-28 19:34:58,869 - INFO - Available sheets: ['Sheet1']
+2025-06-28 19:34:59,852 - INFO - Using sheet 'Sheet1' with 3525 rows
+2025-06-28 19:34:59,979 - INFO - Successfully processed 18920 total records from 5 files
+2025-06-28 19:35:26,212 - ERROR - Production ETL failed: '<=' not supported between instances of 'str' and 'float'
+2025-06-28 19:50:57,884 - INFO - Loading Assignment Master from: C:\Users\carucci_r\OneDrive - City of Hackensack\_Hackensack_Data_Repository\ASSIGNED_SHIFT\Assignment_Master.xlsm
+2025-06-28 19:50:58,355 - INFO - Successfully loaded 151 officer records
+2025-06-28 19:50:58,357 - INFO - Starting complete summons data processing...
+2025-06-28 19:50:58,358 - INFO - Found 5 potential summons files
+2025-06-28 19:50:58,358 - INFO -   - C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\2025_04_ATS_Report.xlsx
+2025-06-28 19:50:58,359 - INFO -   - C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\2025_05_Monthly PD Report May 2025 2.xlsx
+2025-06-28 19:50:58,359 - INFO -   - C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\25_01_ATS_Monthly PD Report Jan 2025.xlsx
+2025-06-28 19:50:58,359 - INFO -   - C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\25_02ATSReport.xlsx
+2025-06-28 19:50:58,359 - INFO -   - C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\25_03ATSReport.xlsx
+2025-06-28 19:50:58,359 - INFO - Processing summons file: C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\2025_04_ATS_Report.xlsx
+2025-06-28 19:50:58,441 - INFO - Available sheets: ['Sheet1']
+2025-06-28 19:50:59,213 - INFO - Using sheet 'Sheet1' with 3552 rows
+2025-06-28 19:50:59,279 - INFO - Processing summons file: C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\2025_05_Monthly PD Report May 2025 2.xlsx
+2025-06-28 19:50:59,357 - INFO - Available sheets: ['Sheet1', 'Sheet2']
+2025-06-28 19:51:00,163 - INFO - Using sheet 'Sheet1' with 3377 rows
+2025-06-28 19:51:00,238 - INFO - Processing summons file: C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\25_01_ATS_Monthly PD Report Jan 2025.xlsx
+2025-06-28 19:51:00,348 - INFO - Available sheets: ['Sheet1']
+2025-06-28 19:51:01,344 - INFO - Using sheet 'Sheet1' with 3231 rows
+2025-06-28 19:51:01,415 - INFO - Processing summons file: C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\25_02ATSReport.xlsx
+2025-06-28 19:51:01,503 - INFO - Available sheets: ['Sheet1']
+2025-06-28 19:51:02,374 - INFO - Using sheet 'Sheet1' with 2741 rows
+2025-06-28 19:51:02,429 - INFO - Processing summons file: C:\Users\carucci_r\OneDrive - City of Hackensack\_EXPORTS\Summons\Court\25_03ATSReport.xlsx
+2025-06-28 19:51:02,515 - INFO - Available sheets: ['Sheet1']
+2025-06-28 19:51:03,309 - INFO - Using sheet 'Sheet1' with 3525 rows
+2025-06-28 19:51:03,393 - INFO - Successfully processed 18920 total records from 5 files
+2025-06-28 19:51:24,465 - ERROR - Production ETL failed: '<=' not supported between instances of 'str' and 'float'

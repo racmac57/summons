@@ -1,0 +1,72 @@
+// ========================================
+// CRITICAL FIX: Use TICKET_COUNT not Record Count
+// ========================================
+//
+// PROBLEM: Power BI was showing "2" for all months because it was
+// counting the NUMBER OF RECORDS instead of summing TICKET_COUNT.
+//
+// Each month has multiple aggregate records:
+// - 1 record for Moving (M) from HISTORICAL_SUMMARY
+// - 1 record for Parking (P) from HISTORICAL_SUMMARY
+// - 1 record for Moving (M) from COURT_CURRENT
+// - 1 record for Parking (P) from COURT_CURRENT
+//
+// Total = 2-4 records per month/type combination
+//
+// SOLUTION: Create measures that SUM the TICKET_COUNT field
+// ========================================
+
+// Total Tickets (All Types)
+Total Tickets = SUM(ATS_Court_Data[TICKET_COUNT])
+
+// Moving Violations Total
+Moving Violations =
+CALCULATE(
+    SUM(ATS_Court_Data[TICKET_COUNT]),
+    ATS_Court_Data[TYPE] = "M"
+)
+
+// Parking Violations Total
+Parking Violations =
+CALCULATE(
+    SUM(ATS_Court_Data[TICKET_COUNT]),
+    ATS_Court_Data[TYPE] = "P"
+)
+
+// Special Complaints Total
+Special Complaints =
+CALCULATE(
+    SUM(ATS_Court_Data[TICKET_COUNT]),
+    ATS_Court_Data[TYPE] = "C"
+)
+
+// ========================================
+// MONTHLY BREAKDOWN MEASURES
+// ========================================
+
+// Current Month Tickets
+Current Month Tickets =
+CALCULATE(
+    SUM(ATS_Court_Data[TICKET_COUNT]),
+    DATESMTD(ATS_Court_Data[ISSUE_DATE])
+)
+
+// Previous Month Tickets
+Previous Month Tickets =
+CALCULATE(
+    SUM(ATS_Court_Data[TICKET_COUNT]),
+    DATEADD(ATS_Court_Data[ISSUE_DATE], -1, MONTH)
+)
+
+// ========================================
+// USAGE IN VISUALS
+// ========================================
+//
+// In your matrix visual, replace:
+// - COUNT(TICKET_NUMBER) with [Total Tickets]
+// - Or use [Moving Violations] and [Parking Violations]
+//
+// In any visual showing ticket counts:
+// - DO NOT use COUNT, COUNTA, or COUNTROWS
+// - ALWAYS use SUM(TICKET_COUNT) or the measures above
+// ========================================
