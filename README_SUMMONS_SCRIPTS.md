@@ -1,7 +1,29 @@
 # Summons Data Merge Diagnostic & Fix Scripts
 
 ## Overview
-Two Python scripts to diagnose and fix format mismatches between gold standard historical data and new September 2025 summons data.
+Two Python scripts to diagnose and fix format mismatches between gold standard historical data and new September 2025 summons data.  
+**Update (November 2025):** The primary production pipeline now runs through `SummonsMaster_Simple.py`, which consumes the consolidated backfill located in `C:\Dev\PowerBI_Date\Backfill\2025_09\...` and the latest monthly e-ticket export (e.g. `05_EXPORTS\_Summons\E_Ticket\25_10_e_ticketexport.csv`). See the _Current Workflow_ section below for details.
+
+---
+
+## Current Workflow (November 2025)
+
+1. **Run `SummonsMaster_Simple.py`**
+   - Calculates a rolling 13‑month window (October 2024 → October 2025 as of 2025‑11‑10).
+   - Loads the new backfill CSV (aggregate counts) and the prior month’s e‑ticket export.
+   - Writes `summons_powerbi_latest.xlsx` to `03_Staging\Summons`.
+
+2. **Power BI Refresh Tips**
+   - In Power Query force `TICKET_COUNT` to **Whole Number** before refreshing visuals.
+   - Create a simple measure:  
+     ```DAX
+     Total Tickets = SUM('___Summons'[TICKET_COUNT])
+     ```
+     Use this measure in the matrix Values bucket to display monthly totals (Oct‑25: M = 480, P = 3,336, Total = 3,816).
+
+3. **Legacy merge scripts** (below) remain available for validating individual CSV drops, but the automated pipeline supersedes them for monthly refreshes.
+
+---
 
 ## Files Created
 1. **summons_merge_diagnostic.py** - Analyzes both files and identifies issues

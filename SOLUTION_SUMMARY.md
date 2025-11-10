@@ -57,15 +57,15 @@
 ## New Simplified Script: SummonsMaster_Simple.py
 
 ### Data Sources:
-1. **Historical Backfill** (Sep 2024 - Aug 2025):
-   - File: `backfill_data\25_08_Hackensack Police Department - Summons Dashboard.csv`
+1. **Historical Backfill** (Oct 2024 - Aug 2025; Mar 2025 pending in source file):
+   - File: `C:\Dev\PowerBI_Date\Backfill\2025_09\summons\Hackensack Police Department - Summons Dashboard.csv`
    - Format: Summary counts by month and type
-   - Output: 24 aggregate records representing 38,019 historical tickets
+   - Output: 22 aggregate records representing 32,868 historical tickets
 
-2. **Current E-Ticket** (Sep 2025):
-   - File: `05_EXPORTS\_Summons\E_Ticket\25_09_e_ticketexport.csv`
+2. **Current E-Ticket** (Oct 2025):
+   - File: `05_EXPORTS\_Summons\E_Ticket\25_10_e_ticketexport.csv`
    - Format: Individual ticket records (semicolon-delimited)
-   - Output: 4,599 individual ticket records
+   - Output: 3,796 individual ticket records
 
 3. **Assignment Master**:
    - File: `09_Reference\Personnel\Assignment_Master_V2.csv`
@@ -87,6 +87,7 @@
 - ✅ Automatic delimiter detection (comma vs semicolon)
 - ✅ Skip bad lines in e-ticket data
 - ✅ PEO/Class I enforcement (116 violations converted)
+- ✅ Rolling 13-month window calculated automatically (excludes current in-progress month)
 
 ---
 
@@ -94,7 +95,7 @@
 
 **File:** `C:\Users\carucci_r\OneDrive - City of Hackensack\03_Staging\Summons\summons_powerbi_latest.xlsx`
 
-**Sheet:** Summons_Data (4,623 records)
+**Sheet:** Summons_Data (3,818 records)
 
 ### Key Columns for Power BI M Code:
 - `TICKET_NUMBER`: Unique ticket identifier (text)
@@ -141,18 +142,18 @@
 ## Results Summary
 
 ### Record Counts:
-- **Historical Aggregate**: 24 records (representing 38,019 tickets from Sep 2024 - Aug 2025)
-- **September 2025 E-Tickets**: 4,599 records
-- **Total Output**: 4,623 records
+- **Historical Aggregate**: 22 records (representing 32,868 tickets from Oct 2024 - Aug 2025; Mar 2025 not present in source backfill)
+- **October 2025 E-Tickets**: 3,796 records
+- **Total Output**: 3,818 records
 
 ### Type Breakdown (Final):
-- **Parking (P)**: 4,037 (87.3%)
-- **Moving (M)**: 577 (12.5%)
-- **Special Complaint (C)**: 9 (0.2%)
+- **Parking (P)**: 3,336 (87.4%)
+- **Moving (M)**: 480 (12.6%)
+- **Special Complaint (C)**: 2 (≪1%)
 
 ### Assignment Enrichment:
-- **Matched**: 4,608 records (99.7%)
-- **Unmatched**: 15 records (0.3%)
+- **Matched**: 3,800 records (99.5%)
+- **Unmatched**: 18 records (0.5%)
 
 ### PEO/Class I Rule:
 - **Converted M→P**: 116 violations
@@ -176,7 +177,7 @@ python SummonsMaster_Simple.py
 
 1. **Verify Power BI Dashboards**: Test that the Top 5 Moving/Parking visualizations are working correctly with the new data
 
-2. **October 2025 Processing**: When October e-ticket data becomes available, the script only needs the new monthly file - no changes required
+2. **Monthly Refreshes**: Each month drop the newest `YY_MM_e_ticketexport.csv` into `_Summons\E_Ticket`, rerun the script, and refresh Power BI (backfill automatically covers the prior 12 months)
 
 3. **Historical Data**: The 24 aggregate records provide context for Sep 2024 - Aug 2025 trends without creating fake granular data
 
@@ -201,6 +202,46 @@ python SummonsMaster_Simple.py
 ### Output Files:
 - `summons_powerbi_latest.xlsx` - Main Power BI data source (4,623 records)
 - `summons_simple_processing.log` - Processing log
+
+---
+
+## Quick Fix: Two-Step Solution
+
+### Step 1: Force Numeric Data Type in Power BI
+1. In Power Query (Transform Data) select `TICKET_COUNT`, change **Data Type** to *Whole Number*, then Apply & Close.
+2. In Model view confirm `TICKET_COUNT` shows the `Σ` icon (numeric) in the `___Summons` table.
+
+### Step 2: Create Simple DAX Measure
+```DAX
+Total Tickets = SUM('___Summons'[TICKET_COUNT])
+```
+Drag this measure (not the raw column) into the matrix **Values** bucket.
+
+Matrix configuration:
+- Rows → `Month_Year`
+- Columns → `TYPE`
+- Values → `Total Tickets`
+
+### Troubleshooting Checklist
+- Ensure the Python export keeps `TICKET_COUNT` numeric; if needed `pd.to_numeric(df['TICKET_COUNT'], errors='coerce')`.
+- In Power BI, verify field summarization is set to **Sum**.
+- Confirm the matrix still references the `Total Tickets` measure.
+
+### Advanced (duplicate rows)
+If the dataset contains multiple rows per Month/Type, use:
+```DAX
+Total Tickets =
+SUMX(
+    SUMMARIZE(
+        '___Summons',
+        '___Summons'[Month_Year],
+        '___Summons'[TYPE],
+        "TicketSum", SUM('___Summons'[TICKET_COUNT])
+    ),
+    [TicketSum]
+)
+```
+Normally unnecessary when the ETL pre-aggregates.
 
 ---
 

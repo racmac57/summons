@@ -10,7 +10,7 @@ Outputs: Clean data for Power BI with proper badge number formatting
 
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from pathlib import Path
 import logging
 import sys
@@ -19,20 +19,20 @@ import sys
 # CONFIGURATION
 # =========================
 
-# Historical backfill data (Sep 2024 - Aug 2025)
-BACKFILL_FILE = Path(
-    r"C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons\backfill_data\25_08_Hackensack Police Department - Summons Dashboard.csv"
+# Latest consolidated backfill (aggregate) data
+BACKFILL_FILE_OVERRIDE = Path(
+    r"C:\Dev\PowerBI_Date\Backfill\2025_09\summons\Hackensack Police Department - Summons Dashboard.csv"
+)
+BACKFILL_BASE_DIR = Path(r"C:\Dev\PowerBI_Date\Backfill")
+BACKFILL_FILENAME = "Hackensack Police Department - Summons Dashboard.csv"
+
+# Folder containing monthly e-ticket exports (one CSV per month)
+ETICKET_FOLDER = Path(
+    r"C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_Summons\E_Ticket"
 )
 
-# Current court data (Sep 2024 - Sep 2025)
-COURT_CURRENT_FILE = Path(
-    r"C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons\backfill_data\25_09_Hackensack Police Department - Summons Dashboard.csv"
-)
-
-# Current month e-ticket data (Sep 2025)
-ETICKET_FILE = Path(
-    r"C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_Summons\E_Ticket\25_09_e_ticketexport.csv"
-)
+# Optional override for testing specific dates
+TODAY_OVERRIDE = None
 
 # Assignment Master
 ASSIGNMENT_FILE = Path(
@@ -100,10 +100,64 @@ def parse_date(date_value):
     return pd.to_datetime(date_value, errors="coerce")
 
 # =========================
+# REPORTING WINDOW HELPERS
+# =========================
+
+def add_month(month_start: date) -> date:
+    """Return the first day of the next month for a given date."""
+    # Always move to day 28 to avoid month length issues, then advance to the first of the next month.
+    tentative = month_start.replace(day=28) + timedelta(days=4)
+    return tentative.replace(day=1)
+
+def compute_reporting_window(today: date | None = None):
+    """
+    Determine the rolling 13-month window ending with the last completed month.
+    Returns (window_start, prev_month_start, prev_month_end, window_months, window_labels)
+    """
+    if today is None:
+        today = TODAY_OVERRIDE or date.today()
+
+    current_month_start = today.replace(day=1)
+    prev_month_end = current_month_start - timedelta(days=1)
+    prev_month_start = prev_month_end.replace(day=1)
+
+    # Go back 12 additional months to get a 13-month window
+    window_start = prev_month_start
+    for _ in range(12):
+        window_start = (window_start.replace(day=1) - timedelta(days=1)).replace(day=1)
+
+    window_months: list[date] = []
+    cursor = window_start
+    while cursor <= prev_month_end:
+        window_months.append(cursor)
+        cursor = add_month(cursor)
+
+    window_labels = {dt.strftime("%m-%y") for dt in window_months}
+    return window_start, prev_month_start, prev_month_end, window_months, window_labels
+
+def find_backfill_file() -> Path | None:
+    """Locate the latest backfill CSV."""
+    if BACKFILL_FILE_OVERRIDE.exists():
+        return BACKFILL_FILE_OVERRIDE
+
+    if not BACKFILL_BASE_DIR.exists():
+        log.error(f"Backfill base directory not found: {BACKFILL_BASE_DIR}")
+        return None
+
+    candidates = list(BACKFILL_BASE_DIR.glob(f"*/summons/{BACKFILL_FILENAME}"))
+    if not candidates:
+        log.error("No backfill files found in the expected directory structure.")
+        return None
+
+    latest = max(candidates, key=lambda p: p.stat().st_mtime)
+    log.info(f"Using backfill file: {latest}")
+    return latest
+
+# =========================
 # LOAD HISTORICAL BACKFILL
 # =========================
 
-def load_backfill_data():
+def load_backfill_data(window_start: date, prev_month_start: date, window_labels: set[str]):
     """
     Load historical summary data (Sep 2024 - Aug 2025).
     Stores as aggregate records, not individual tickets.
@@ -112,11 +166,12 @@ def load_backfill_data():
     log.info("LOADING HISTORICAL BACKFILL DATA (Sep 2024 - Aug 2025)")
     log.info("=" * 70)
 
-    if not BACKFILL_FILE.exists():
-        log.error(f"Backfill file not found: {BACKFILL_FILE}")
+    backfill_path = find_backfill_file()
+    if backfill_path is None or not backfill_path.exists():
+        log.error("Backfill file could not be located.")
         return pd.DataFrame()
 
-    df = pd.read_csv(BACKFILL_FILE, encoding="utf-8")
+    df = pd.read_csv(backfill_path, encoding="utf-8")
     log.info(f"Loaded {len(df)} summary rows from backfill file")
 
     records = []
@@ -133,6 +188,14 @@ def load_backfill_data():
             parts = month_year.split("-")
             month = int(parts[0])
             year = 2000 + int(parts[1])
+            issue_date = date(year, month, 1)
+
+            if issue_date < window_start or issue_date >= prev_month_start:
+                continue
+
+            month_year_label = issue_date.strftime("%m-%y")
+            if month_year_label not in window_labels:
+                continue
 
             # Create aggregate record
             record = {
@@ -142,7 +205,7 @@ def load_backfill_data():
                 "PADDED_BADGE_NUMBER": "",
                 "OFFICER_DISPLAY_NAME": "MULTIPLE OFFICERS (Historical)",
                 "OFFICER_NAME_RAW": "MULTIPLE OFFICERS",
-                "ISSUE_DATE": pd.Timestamp(year, month, 1),
+                "ISSUE_DATE": pd.Timestamp(issue_date),
                 "VIOLATION_NUMBER": "39:4-85" if violation_type == "M" else "175-10",
                 "VIOLATION_DESCRIPTION": f"{violation_type} Violations - Historical ({count} tickets)",
                 "VIOLATION_TYPE": f"{violation_type} Violations - Historical",
@@ -150,12 +213,12 @@ def load_backfill_data():
                 "STATUS": "Historical Summary",
                 "LOCATION": "",
                 "WARNING_FLAG": "",
-                "SOURCE_FILE": BACKFILL_FILE.name,
+                "SOURCE_FILE": backfill_path.name,
                 "ETL_VERSION": "HISTORICAL_SUMMARY",
                 "Year": year,
                 "Month": month,
                 "YearMonthKey": year * 100 + month,
-                "Month_Year": f"{month:02d}-{year-2000:02d}",
+                "Month_Year": month_year_label,
                 "TEAM": "AGGREGATE",
                 "WG1": "",
                 "WG2": "AGGREGATE",
@@ -182,96 +245,14 @@ def load_backfill_data():
     total_tickets = result["TICKET_COUNT"].sum() if not result.empty else 0
     log.info(f"Created {len(result)} aggregate records (representing {total_tickets:,} historical tickets)")
 
-    return result
-
-# =========================
-# LOAD COURT CURRENT DATA
-# =========================
-
-def load_court_current_data():
-    """
-    Load current court data (Sep 2024 - Aug 2025).
-    EXCLUDES Sep 2025 to avoid duplication with e-ticket data.
-    Stores as aggregate records, not individual tickets.
-    """
-    log.info("=" * 70)
-    log.info("LOADING COURT CURRENT DATA (Sep 2024 - Aug 2025, excluding Sep 2025)")
-    log.info("=" * 70)
-
-    if not COURT_CURRENT_FILE.exists():
-        log.error(f"Court current file not found: {COURT_CURRENT_FILE}")
-        return pd.DataFrame()
-
-    df = pd.read_csv(COURT_CURRENT_FILE, encoding="utf-8")
-    log.info(f"Loaded {len(df)} summary rows from court current file")
-
-    records = []
-    for idx, row in df.iterrows():
-        try:
-            violation_type = str(row.get("TYPE", "P")).strip()
-            count = int(float(row.get("Count of TICKET_NUMBER", 0)))
-            month_year = str(row.get("Month_Year", "")).strip()
-
-            if count <= 0 or not month_year or "-" not in month_year:
-                continue
-
-            # Parse Month_Year (format: MM-YY)
-            parts = month_year.split("-")
-            month = int(parts[0])
-            year = 2000 + int(parts[1])
-
-            # CRITICAL: Skip September 2025 to avoid duplication with e-ticket data
-            if year == 2025 and month == 9:
-                log.info(f"Skipping Sep 2025 {violation_type} ({count} tickets) - will use e-ticket data instead")
-                continue
-
-            # Create aggregate record
-            record = {
-                "TICKET_NUMBER": f"COURT_AGG_{year}{month:02d}_{violation_type}_{idx}",
-                "TICKET_COUNT": count,
-                "IS_AGGREGATE": True,
-                "PADDED_BADGE_NUMBER": "",
-                "OFFICER_DISPLAY_NAME": "MULTIPLE OFFICERS (Court Current)",
-                "OFFICER_NAME_RAW": "MULTIPLE OFFICERS",
-                "ISSUE_DATE": pd.Timestamp(year, month, 1),
-                "VIOLATION_NUMBER": "39:4-85" if violation_type == "M" else "175-10",
-                "VIOLATION_DESCRIPTION": f"{violation_type} Violations - Court Current ({count} tickets)",
-                "VIOLATION_TYPE": f"{violation_type} Violations - Court Current",
-                "TYPE": violation_type,
-                "STATUS": "Court Current",
-                "LOCATION": "",
-                "WARNING_FLAG": "",
-                "SOURCE_FILE": COURT_CURRENT_FILE.name,
-                "ETL_VERSION": "COURT_CURRENT",
-                "Year": year,
-                "Month": month,
-                "YearMonthKey": year * 100 + month,
-                "Month_Year": f"{month:02d}-{year-2000:02d}",
-                "TEAM": "AGGREGATE",
-                "WG1": "",
-                "WG2": "AGGREGATE",
-                "WG3": "",
-                "WG4": "",
-                "WG5": "",
-                "POSS_CONTRACT_TYPE": "",
-                "ASSIGNMENT_FOUND": False,
-                "DATA_QUALITY_SCORE": 100,
-                "DATA_QUALITY_TIER": "High",
-                "TOTAL_PAID_AMOUNT": np.nan,
-                "FINE_AMOUNT": np.nan,
-                "COST_AMOUNT": np.nan,
-                "MISC_AMOUNT": np.nan,
-                "PROCESSING_TIMESTAMP": datetime.now(),
-            }
-            records.append(record)
-
-        except Exception as e:
-            log.warning(f"Error processing court current row {idx}: {e}")
-            continue
-
-    result = pd.DataFrame(records)
-    total_tickets = result["TICKET_COUNT"].sum() if not result.empty else 0
-    log.info(f"Created {len(result)} aggregate records (representing {total_tickets:,} court current tickets)")
+    expected_labels = window_labels.copy()
+    prev_label = prev_month_start.strftime("%m-%y")
+    if prev_label in expected_labels:
+        expected_labels.remove(prev_label)
+    present_labels = set(result["Month_Year"].unique())
+    missing_labels = sorted(expected_labels - present_labels)
+    if missing_labels:
+        log.warning(f"Missing backfill months (no aggregate data): {', '.join(missing_labels)}")
 
     return result
 
@@ -279,20 +260,23 @@ def load_court_current_data():
 # LOAD SEPTEMBER 2025 E-TICKET
 # =========================
 
-def load_eticket_data():
+def load_eticket_data(prev_month_start: date, prev_month_end: date):
     """
-    Load September 2025 e-ticket data.
+    Load the e-ticket data for the previous month.
     """
     log.info("=" * 70)
-    log.info("LOADING SEPTEMBER 2025 E-TICKET DATA")
+    log.info(f"LOADING E-TICKET DATA FOR {prev_month_start.strftime('%B %Y')}")
     log.info("=" * 70)
 
-    if not ETICKET_FILE.exists():
-        log.error(f"E-ticket file not found: {ETICKET_FILE}")
+    eticket_filename = f"{prev_month_start.strftime('%y_%m')}_e_ticketexport.csv"
+    eticket_path = ETICKET_FOLDER / eticket_filename
+
+    if not eticket_path.exists():
+        log.error(f"E-ticket file not found: {eticket_path}")
         return pd.DataFrame()
 
     # Detect delimiter (could be comma or semicolon)
-    with open(ETICKET_FILE, "r", encoding="utf-8") as f:
+    with open(eticket_path, "r", encoding="utf-8") as f:
         first_line = f.readline()
         delimiter = ";" if first_line.count(";") > first_line.count(",") else ","
 
@@ -300,7 +284,7 @@ def load_eticket_data():
 
     # Load CSV
     try:
-        df = pd.read_csv(ETICKET_FILE, dtype=str, encoding="utf-8", na_filter=False,
+        df = pd.read_csv(eticket_path, dtype=str, encoding="utf-8", na_filter=False,
                         delimiter=delimiter, on_bad_lines='skip')
     except Exception as e:
         log.error(f"Error loading e-ticket file: {e}")
@@ -327,7 +311,7 @@ def load_eticket_data():
         "STATUS": df.get("Case Status Code", ""),
         "LOCATION": df.get("Offense Street Name", ""),
         "WARNING_FLAG": df.get("Written Warning", ""),
-        "SOURCE_FILE": ETICKET_FILE.name,
+        "SOURCE_FILE": eticket_path.name,
         "ETL_VERSION": "ETICKET_CURRENT",
         "Year": issue_dates.dt.year,
         "Month": issue_dates.dt.month,
@@ -349,6 +333,20 @@ def load_eticket_data():
         "MISC_AMOUNT": np.nan,
         "PROCESSING_TIMESTAMP": datetime.now(),
     })
+
+    # Restrict to the prior month window
+    result = result[result["ISSUE_DATE"].notna()]
+    if result.empty:
+        log.warning("No valid issue dates found in e-ticket data.")
+        return result
+
+    mask = (result["ISSUE_DATE"] >= pd.Timestamp(prev_month_start)) & (
+        result["ISSUE_DATE"] <= pd.Timestamp(prev_month_end)
+    )
+    before_count = len(result)
+    result = result.loc[mask].copy()
+    if before_count != len(result):
+        log.info(f"Filtered e-ticket records to previous month: {before_count} -> {len(result)}")
 
     # Classify violation types
     result = classify_violations(result)
@@ -507,12 +505,17 @@ def main():
     log.info("=" * 70)
     log.info("")
 
+    window_start, prev_month_start, prev_month_end, window_months, window_labels = compute_reporting_window()
+    log.info(f"Reporting window start: {window_start.strftime('%Y-%m-%d')}")
+    log.info(f"Previous month start:  {prev_month_start.strftime('%Y-%m-%d')}")
+    log.info(f"Previous month end:    {prev_month_end.strftime('%Y-%m-%d')}")
+
     # Load data
-    backfill_df = load_backfill_data()
+    backfill_df = load_backfill_data(window_start, prev_month_start, window_labels)
     # REMOVED: court_current_df = load_court_current_data()  
     # ❌ This was causing duplication by loading Sept 2024 - Aug 2025 twice!
     # ✅ We only need backfill_df for historical data (Sept 2024 - Aug 2025)
-    eticket_df = load_eticket_data()
+    eticket_df = load_eticket_data(prev_month_start, prev_month_end)
 
     if backfill_df.empty and eticket_df.empty:
         log.error("No data loaded - exiting")
@@ -527,6 +530,26 @@ def main():
     frames = [f for f in [backfill_df, eticket_df] if not f.empty]
     all_df = pd.concat(frames, ignore_index=True, sort=False)
     log.info(f"Combined total: {len(all_df)} records")
+
+    if all_df.empty:
+        log.error("Combined dataset is empty after loading sources.")
+        return False
+
+    # Ensure we only retain the 13-month reporting window
+    all_df = all_df[all_df["ISSUE_DATE"].notna()].copy()
+    mask = (all_df["ISSUE_DATE"] >= pd.Timestamp(window_start)) & (
+        all_df["ISSUE_DATE"] <= pd.Timestamp(prev_month_end)
+    )
+    before_window_count = len(all_df)
+    all_df = all_df.loc[mask].copy()
+    if before_window_count != len(all_df):
+        log.info(f"Filtered records to reporting window: {before_window_count} -> {len(all_df)}")
+
+    # Recompute date intelligence columns for consistency
+    all_df["Year"] = all_df["ISSUE_DATE"].dt.year.astype(int)
+    all_df["Month"] = all_df["ISSUE_DATE"].dt.month.astype(int)
+    all_df["YearMonthKey"] = all_df["Year"] * 100 + all_df["Month"]
+    all_df["Month_Year"] = all_df["ISSUE_DATE"].dt.strftime("%m-%y")
 
     # Log breakdown by source
     if not all_df.empty:
