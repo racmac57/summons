@@ -214,6 +214,7 @@ data_samples/
 *.xlsx
 *.xls
 archive/
+!archive/deprecated/
 nppBackup/
 desktop.ini
 *.backup*
