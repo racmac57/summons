@@ -112,7 +112,12 @@ The `m_code/` directory contains 18 files from Oct-Nov 2025. Files with `FINAL_`
 | `TICKET_COUNT` | int | ETL | >1 for aggregates, =1 for individuals |
 | `YearMonthKey` | int | ETL | YYYYMM sort/filter key |
 | `Month_Year` | text | ETL | `MM-YY` display label |
-| `WG1`-`WG5` | text | Assignment Master | Org hierarchy (Division->Bureau->Platoon->Team) |
+| `WG1` | text | Assignment Master | Division (e.g. OPERATIONS DIVISION) |
+| `WG2` | text | Assignment Master | Bureau (e.g. PATROL BUREAU) |
+| `WG3` | text | Assignment Master | **NOT in slim CSV or PBI** — only in deprecated script's ASSIGNMENT_OVERRIDES |
+| `WG4` | text | Assignment Master | **NOT in slim CSV or PBI** — only in deprecated script |
+| `WG5` | text | Assignment Master | **NOT in slim CSV or PBI** — only in deprecated script |
+| `TEAM` | text | Assignment Master | **NOT in slim CSV or PBI** — only in deprecated script |
 | `ISSUE_DATE` | date | Source CSV | Violation date |
 | `TICKET_NUMBER` | text | Source CSV | Unique summons identifier |
 | `VIOLATION_DESCRIPTION` | text | Source CSV | Statute/violation text |
@@ -125,10 +130,10 @@ The `m_code/` directory contains 18 files from Oct-Nov 2025. Files with `FINAL_`
 2. **Backfill/e-ticket split**: Pre-Sep 2025 = aggregated backfill (TICKET_COUNT > 1). Sep 2025+ = individual e-ticket records (TICKET_COUNT = 1).
 3. **Power BI aggregation**: MUST use `SUM(TICKET_COUNT)`, never `COUNTROWS`, because aggregate records represent multiple tickets.
 4. **Badge padding**: All badge numbers zero-padded to 4 digits (`38` -> `0038`).
-5. **PEO rule**: Parking Enforcement Officers have violation type reclassified by assignment logic.
-6. **Conditional override**: Badge 2025 -> SSOCC only for "FIRE LANES" violations; other violations stay Traffic Bureau.
+5. **PEO/Class I reclassification rule** (`apply_peo_rule`): PEO and Class I officers cannot issue moving violations. Any record where WG3 is "PEO" or "CLASS I" and TYPE is "M" is reclassified to "P". Ported from SummonsMaster_Simple.py to summons_etl_enhanced.py on 2026-03-28. Runs after TYPE classification and before backfill merge.
+6. **Conditional override**: Badge 2025 -> SSOCC only for "FIRE LANES" violations; other violations stay Traffic Bureau. (Was in ASSIGNMENT_OVERRIDES in deprecated SummonsMaster_Simple.py; not yet ported to enhanced script.)
 7. **Delimiter detection**: 2025 e-ticket CSVs use semicolons; 2026+ use commas. Scripts auto-detect.
-8. **TYPE classification**: Title 39 moving statutes -> M; parking keywords (METER, FIRE LANE, NO PARKING) -> P; criminal -> C.
+8. **TYPE classification**: Uses raw `Case Type Code` from export (M=Moving, P=Parking, C=Criminal). No statute-based reclassification except PEO/Class I rule (#5).
 
 ---
 
@@ -222,6 +227,8 @@ After each ETL run, verify:
 12. **`process_monthly_summons.py` uses `C:\Dev\PowerBI_Data\Backfill`** -- a path that likely does not exist on the production machine.
 13. **`summons_etl_enhanced.py` requires `fuzzywuzzy` package** -- not in any requirements.txt and not installable via standard means on all machines.
 14. **No requirements.txt file.** `documents/requirements_txt.txt` exists but is not a proper pip requirements file at the repo root.
+15. **Badge 0388 (LIGGIO)** — was hardcoded in ASSIGNMENT_OVERRIDES in the deprecated SummonsMaster_Simple.py as Patrol Bureau / Platoon A / A3. This override is NOT in summons_etl_enhanced.py. Badge 0388 appears in e-ticket data (Oct-Dec 2025) but may not be in Assignment_Master_V2.csv. **PENDING RAC confirmation**: Is LIGGIO still on this assignment? Should 0388 be added to the Assignment Master or to an override dict in the enhanced script?
+16. **WG3/WG4/WG5/TEAM columns missing from pipeline.** The slim CSV and Power BI ___Summons table only have WG1 and WG2. The deprecated script populated WG3-WG5 and TEAM via ASSIGNMENT_OVERRIDES. If sub-bureau granularity is needed in PBI, these columns must be added to the enhanced ETL output.
 
 ---
 

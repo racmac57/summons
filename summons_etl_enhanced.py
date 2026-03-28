@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# 🕒 2026-02-17-00-00-00
+# 🕒 2026-03-28 — authoritative Summons ETL (SummonsMaster_Simple.py deprecated)
 # Police_Analytics_Dashboard/summons_etl_enhanced
 # Author: R. A. Carucci
 # Purpose: ETL pipeline for monthly E-ticket CSV processing.
@@ -737,6 +737,21 @@ class SummonsETLProcessor:
         self._validate_record_counts(df_out)
         return self.staging_path / "summons_powerbi_latest.xlsx"
 
+    @staticmethod
+    def apply_peo_rule(df):
+        """PEO and Class I officers cannot issue moving violations.
+        Convert any TYPE='M' to 'P' for these officers.
+        Ported from SummonsMaster_Simple.py 2026-03-28 — verified by RAC"""
+        if 'WG3' not in df.columns or 'TYPE' not in df.columns:
+            return df
+        wg3_values = df["WG3"].astype(str).str.strip().str.upper()
+        mask = wg3_values.isin(["PEO", "CLASS I"]) & (df["TYPE"] == "M")
+        flipped = mask.sum()
+        df.loc[mask, "TYPE"] = "P"
+        if flipped > 0:
+            logging.info("PEO/Class I rule: Converted %s moving violations to parking", flipped)
+        return df
+
     def _validate_record_counts(self, df):
         """Post-save QA: log counts by badge+type to validate against raw CSV pivot"""
         if 'PADDED_BADGE_NUMBER' not in df.columns:
@@ -808,6 +823,10 @@ def main():
     if not unified_data.empty and "TICKET_COUNT" not in unified_data.columns:
         unified_data["TICKET_COUNT"] = 1
 
+    # PEO/Class I: moving → parking reclassification
+    if not unified_data.empty:
+        unified_data = processor.apply_peo_rule(unified_data)
+
     # Merge backfill for gap months (03-25, 07-25, 10-25, 11-25) into Department-Wide Summons
     try:
         from summons_backfill_merge import merge_missing_summons_months
@@ -827,7 +846,17 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
-
-
+    import sys as _sys
+    if len(_sys.argv) > 1 and _sys.argv[1] == "--test-peo-rule":
+        # Validation: apply_peo_rule against synthetic input
+        import pandas as _pd
+        test_df = _pd.DataFrame({
+            "WG3": ["PEO", "CLASS I", "PLATOON A", "PEO", "CLASS I"],
+            "TYPE": ["M", "M", "M", "P", "P"],
+        })
+        result = SummonsETLProcessor.apply_peo_rule(test_df.copy())
+        assert list(result["TYPE"]) == ["P", "P", "M", "P", "P"], f"Failed: {list(result['TYPE'])}"
+        print("apply_peo_rule validation PASSED")
+    else:
+        main()
 
