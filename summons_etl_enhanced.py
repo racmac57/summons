@@ -163,7 +163,7 @@ class SummonsETLProcessor:
                 logging.error("Assignment Master missing display name column (need 'Proposed 4-Digit Format' or 'STANDARD_NAME')")
                 return pd.DataFrame()
 
-            optional = {'WG2', 'LAST_NAME', 'TITLE'} & set(df.columns)
+            optional = {'WG1', 'WG2', 'WG3', 'WG4', 'TEAM', 'RANK', 'LAST_NAME', 'TITLE'} & set(df.columns)
             df_clean = df[list({display_col, 'PADDED_BADGE_NUMBER'} | optional)].copy()
 
             df_clean = df_clean.rename(columns={display_col: 'OFFICER_DISPLAY_NAME'})
@@ -426,7 +426,8 @@ class SummonsETLProcessor:
         if self.assignment_master.empty:
             logging.warning("Assignment Master not loaded — skipping enrichment")
             df['OFFICER_DISPLAY_NAME'] = 'UNKNOWN'
-            df['WG2'] = ''
+            for _wg in ('WG1', 'WG2', 'WG3', 'WG4', 'TEAM', 'RANK'):
+                df[_wg] = ''
             df['OFFICER_MATCH_QUALITY'] = 'NO_MASTER'
             return df
 
@@ -449,9 +450,10 @@ class SummonsETLProcessor:
                 'UNKNOWN - ' + merged.loc[unmatched_mask, 'PADDED_BADGE_NUMBER']
             )
 
-        if 'WG2' not in merged.columns:
-            merged['WG2'] = ''
-        merged['WG2'] = merged['WG2'].fillna('')
+        for _wg in ('WG1', 'WG2', 'WG3', 'WG4', 'TEAM', 'RANK'):
+            if _wg not in merged.columns:
+                merged[_wg] = ''
+            merged[_wg] = merged[_wg].fillna('')
 
         # Apply manual overrides (optionally conditional on violation type)
         for badge, overrides in ASSIGNMENT_OVERRIDES.items():
@@ -692,7 +694,8 @@ class SummonsETLProcessor:
 
         # Column order — Power BI priority columns first
         pbi_priority = [
-            'PADDED_BADGE_NUMBER', 'OFFICER_DISPLAY_NAME', 'WG2', 'TITLE', 'TYPE',
+            'PADDED_BADGE_NUMBER', 'OFFICER_DISPLAY_NAME',
+            'WG1', 'WG2', 'WG3', 'WG4', 'TEAM', 'RANK', 'TITLE', 'TYPE',
             'YearMonthKey', 'Month_Year', 'Year', 'Month',
             'VIOLATION_DATE', 'ISSUE_DATE', 'STATUTE', 'VIOLATION_CATEGORY',
             'OFFICER_NAME_RAW', 'NAME_FORMAT_ANOMALY',
