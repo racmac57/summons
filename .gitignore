@@ -206,7 +206,7 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# HPD ETL — local data and outputs
+# HPD ETL - local data and outputs
 output/
 data/
 data_samples/
@@ -218,3 +218,30 @@ nppBackup/
 desktop.ini
 *.backup*
 *.txt
+*.tar.gz
+
+# Log files
+*.log
+
+# Shell artifact junk files
+/cd
+/echo
+/python
+/_ul
+
+# Notepad++ backups
+nppBackup/
+
+# OneDrive sync conflicts
+*\ (1)*
+*\ (2)*
+*\ (3)*
+
+# Python backup files
+*.py.backup_*
+
+# VS Code workspace (user-specific)
+*.code-workspace
+
+# Claude settings
+.claude/
