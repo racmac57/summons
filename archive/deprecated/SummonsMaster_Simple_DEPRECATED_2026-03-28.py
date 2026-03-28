@@ -21,10 +21,10 @@ import sys
 
 # Latest consolidated backfill (aggregate) data
 BACKFILL_FILE_OVERRIDE = Path(
-    r"C:\Dev\PowerBI_Date\Backfill\2025_09\summons\Hackensack Police Department - Summons Dashboard.csv"
+    r"C:\Users\carucci_r\OneDrive - City of Hackensack\PowerBI_Data\Backfill\2025_12\summons\2025_12_department_wide_summons.csv"
 )
-BACKFILL_BASE_DIR = Path(r"C:\Dev\PowerBI_Date\Backfill")
-BACKFILL_FILENAME = "Hackensack Police Department - Summons Dashboard.csv"
+BACKFILL_BASE_DIR = Path(r"C:\Users\carucci_r\OneDrive - City of Hackensack\PowerBI_Data\Backfill")
+BACKFILL_FILENAME = "2025_12_department_wide_summons.csv"
 
 # Folder containing monthly e-ticket exports (one CSV per month)
 ETICKET_FOLDER = Path(
@@ -39,7 +39,7 @@ ASSIGNMENT_FILE = Path(
     r"C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Personnel\Assignment_Master_V2.csv"
 )
 
-# Manual overrides for badges missing from assignment file
+# Manual overrides for badges missing from assignment file or temp assignments
 ASSIGNMENT_OVERRIDES = {
     # Example: Badge 0388 currently missing from assignment master but needed for bureau reporting
     "0388": {
@@ -51,6 +51,19 @@ ASSIGNMENT_OVERRIDES = {
         "WG4": "A3",
         "WG5": "",
         "POSS_CONTRACT_TYPE": "",
+    },
+    # Feb 2026: PEO Mariah Ramirez (badge 2025) on temp assignment to SSOCC for drone/firezone work.
+    # Only FIRE LANES violations from badge 2025 show as SSOCC; other violations stay Traffic Bureau.
+    "2025": {
+        "_condition": {"column": "VIOLATION_DESCRIPTION", "contains": "FIRE LANES"},
+        "OFFICER_DISPLAY_NAME": "M. RAMIREZ #2025",
+        "TEAM": "Safe Streets Operations",
+        "WG1": "OPERATIONS DIVISION",
+        "WG2": "SAFE STREETS OPERATIONS CONTROL CENTER",
+        "WG3": "PEO",
+        "WG4": "",
+        "WG5": "",
+        "POSS_CONTRACT_TYPE": "PARKING ENFORCEMENT OFF",
     },
 }
 
@@ -192,9 +205,10 @@ def load_backfill_data(window_start: date, prev_month_start: date, window_labels
     records = []
     for idx, row in df.iterrows():
         try:
-            violation_type = str(row.get("TYPE", "P")).strip()
-            count = int(float(row.get("Count of TICKET_NUMBER", 0)))
-            month_year = str(row.get("Month_Year", "")).strip()
+            # Handle both column name formats
+            violation_type = str(row.get("TYPE", row.get("Time Category", "P"))).strip()
+            count = int(float(row.get("Count of TICKET_NUMBER", row.get("Sum of Value", 0))))
+            month_year = str(row.get("Month_Year", row.get("PeriodLabel", ""))).strip()
 
             if count <= 0 or not month_year or "-" not in month_year:
                 continue
@@ -278,13 +292,17 @@ def load_backfill_data(window_start: date, prev_month_start: date, window_labels
 def load_eticket_data(prev_month_start: date, prev_month_end: date):
     """
     Load the e-ticket data for the previous month.
+    New directory structure: YYYY/raw/month/YYYY_MM_eticket_export.csv
     """
     log.info("=" * 70)
     log.info(f"LOADING E-TICKET DATA FOR {prev_month_start.strftime('%B %Y')}")
     log.info("=" * 70)
 
-    eticket_filename = f"{prev_month_start.strftime('%y_%m')}_e_ticketexport.csv"
-    eticket_path = ETICKET_FOLDER / eticket_filename
+    # Build path: YYYY\month\YYYY_MM_eticket_export.csv
+    year = prev_month_start.year
+    month = prev_month_start.month
+    eticket_filename = f"{year}_{month:02d}_eticket_export.csv"
+    eticket_path = ETICKET_FOLDER / str(year) / "month" / eticket_filename
 
     if not eticket_path.exists():
         log.error(f"E-ticket file not found: {eticket_path}")
@@ -311,6 +329,9 @@ def load_eticket_data(prev_month_start: date, prev_month_end: date):
     issue_dates = df.get("Issue Date", pd.Series([""] * len(df))).apply(parse_date)
 
     # Build standardized dataframe
+    # Use Case Type Code directly from export (do not reclassify)
+    case_type_raw = df.get("Case Type Code", pd.Series([""] * len(df))).astype(str).str.strip().str.upper()
+    
     result = pd.DataFrame({
         "TICKET_NUMBER": df.get("Ticket Number", ""),
         "TICKET_COUNT": 1,  # Each e-ticket is individual
@@ -322,7 +343,7 @@ def load_eticket_data(prev_month_start: date, prev_month_end: date):
         "VIOLATION_NUMBER": df.get("Statute", ""),
         "VIOLATION_DESCRIPTION": df.get("Violation Description", ""),
         "VIOLATION_TYPE": df.get("Violation Description", ""),
-        "TYPE": "",  # Will be classified
+        "TYPE": case_type_raw,  # Use Case Type Code directly from export (M, P, C)
         "STATUS": df.get("Case Status Code", ""),
         "LOCATION": df.get("Offense Street Name", ""),
         "WARNING_FLAG": df.get("Written Warning", ""),
@@ -363,8 +384,8 @@ def load_eticket_data(prev_month_start: date, prev_month_end: date):
     if before_count != len(result):
         log.info(f"Filtered e-ticket records to previous month: {before_count} -> {len(result)}")
 
-    # Classify violation types
-    result = classify_violations(result)
+    # NOTE: Removed classify_violations() call - now using Case Type Code directly from export
+    # This ensures visual counts match raw export counts exactly
 
     log.info(f"Processed {len(result)} e-ticket records")
     type_counts = result["TYPE"].value_counts().to_dict()
@@ -476,9 +497,21 @@ def enrich_with_assignments(df, assign_df):
             merged.loc[mask, col] = merged.loc[mask, assign_col]
             merged.drop(columns=[assign_col], inplace=True)
 
-    # Apply manual overrides for known badges not present in assignment file
+    # Apply manual overrides for known badges (optionally conditional on violation type)
     for badge, overrides in ASSIGNMENT_OVERRIDES.items():
         mask = merged["PADDED_BADGE_NUMBER"] == badge
+        # Support conditional override: only apply when column contains substring (e.g. FIRE LANES)
+        cond = overrides.get("_condition")
+        if cond and isinstance(cond, dict):
+            col_name = cond.get("column")
+            substring = cond.get("contains", "")
+            if col_name and substring:
+                # Try common column names for violation description
+                for c in [col_name, "VIOLATION_DESCRIPTION", "Violation Description"]:
+                    if c in merged.columns:
+                        mask = mask & merged[c].astype(str).str.upper().str.contains(substring.upper(), na=False)
+                        break
+            overrides = {k: v for k, v in overrides.items() if k != "_condition"}
         if mask.any():
             log.info(f"Applying assignment override for badge {badge} ({mask.sum()} records)")
             for col, value in overrides.items():

@@ -6,7 +6,8 @@
     "SUMMARY.md",
     "CONTRIBUTING.md",
     "reorganization_proposal.md",
-    "findings.json"
+    "findings.json",
+    "docs/etl-diff-analysis.md"
   ],
   "files_updated": [
     "CLAUDE.md",
@@ -15,6 +16,9 @@
     "docs/etl-pipeline.md",
     "docs/file-inventory.md",
     "docs/config-reference.md"
+  ],
+  "files_moved": [
+    "SummonsMaster_Simple.py -> archive/deprecated/SummonsMaster_Simple_DEPRECATED_2026-03-28.py"
   ],
   "dead_scripts": [
     "SummonsMaster.py",
@@ -144,13 +148,15 @@
     "Hardcoded paths expose username (carucci_r) but this is standard for this workspace"
   ],
   "human_review_needed": [
-    "Which ETL is authoritative? SummonsMaster_Simple.py and summons_etl_enhanced.py both write summons_powerbi_latest.xlsx",
+    "RESOLVED 2026-03-28: summons_etl_enhanced.py is authoritative; SummonsMaster_Simple.py deprecated to archive/deprecated/",
+    "FOLLOW-UP: Port PEO/Class I reclassification rule (apply_peo_rule) to summons_etl_enhanced.py",
+    "FOLLOW-UP: Confirm whether WG1/WG3-WG5/TEAM columns are needed by any Power BI query",
     "Is config.yaml loaded by anything? References old paths. Safe to archive?",
     "Is process_monthly_summons.py still used? It uses C:\\Dev\\PowerBI_Data\\Backfill path",
-    "Badge 0388 override in SummonsMaster_Simple.py -- is LIGGIO still on this assignment?",
+    "Badge 0388 override was in SummonsMaster_Simple.py only -- is LIGGIO still on this assignment? If so, add to enhanced",
     "Badge 2025/0738 overrides -- are FIRE LANES conditionals still active?",
     "When will 2025_12 backfill be superseded by a 2026_xx backfill?",
     "Approve root cleanup per reorganization_proposal.md (~130 files to archive/delete)"
   ],
-  "commit_message": "docs(Summons): audit, CLAUDE.md update, ETL pipeline map [swarm-run 2026-03-28]"
+  "commit_message": "refactor(Summons): mark SummonsMaster_Simple.py deprecated, summons_etl_enhanced.py authoritative [2026-03-28]"
 }

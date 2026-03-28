@@ -22,17 +22,17 @@ DATA SOURCES
   +-- 09_Reference/Personnel/Assignment_Master_V2.csv
         (Badge -> Officer display name, bureau, division)
 
-PROCESSING: SummonsMaster_Simple.py  (PRIMARY)
-  1. Load backfill CSV -> tag ETL_VERSION=HISTORICAL_SUMMARY
-  2. Scan e-ticket folder -> load monthly CSVs (auto-detect delimiter/encoding)
-  3. Tag e-tickets ETL_VERSION=ETICKET_CURRENT, TICKET_COUNT=1
-  4. Pad badge numbers to 4 digits, join to Assignment Master
-  5. Apply conditional overrides (ASSIGNMENT_OVERRIDES dict)
-  6. Apply PEO reclassification rule
-  7. Filter to rolling 13-month window (ending prior complete month)
+PROCESSING: summons_etl_enhanced.py  (AUTHORITATIVE -- production)
+  1. Scan 13-month window of e-ticket CSVs (auto-detect delimiter)
+  2. Validate Officer Id, pad to 4 digits, join to Assignment Master (V2/V3)
+  3. Apply conditional overrides (ASSIGNMENT_OVERRIDES dict)
+  4. FuzzyWuzzy last-name cross-validation
+  5. Categorize violations, classify TYPE from Case Type Code
+  6. Merge backfill for gap months via summons_backfill_merge
+  7. DFR export: filter DFR badges, map to schema, append to Drone workbook
 
-ALTERNATE: summons_etl_enhanced.py  (DFR export + FuzzyWuzzy matching)
-  Same core flow plus DFR-specific export to Drone workbook.
+DEPRECATED: SummonsMaster_Simple.py  (moved to archive/deprecated/ 2026-03-28)
+  Legacy script. See docs/etl-diff-analysis.md for full comparison.
 
 OUTPUT: 03_Staging/Summons/summons_powerbi_latest.xlsx (sheet: Summons_Data)
 
@@ -50,8 +50,8 @@ POWER BI QUERIES (M Code):
 
 | File | Lines | Purpose |
 |---|---|---|
-| `SummonsMaster_Simple.py` | 711 | **Primary ETL** -- backfill + e-ticket -> Power BI staging |
-| `summons_etl_enhanced.py` | 833 | E-ticket ETL with DFR export and FuzzyWuzzy matching |
+| `summons_etl_enhanced.py` | 833 | **AUTHORITATIVE -- current production script** -- 13-month e-ticket ETL + DFR export + FuzzyWuzzy matching |
+| `archive/deprecated/SummonsMaster_Simple_DEPRECATED_2026-03-28.py` | 711 | **DEPRECATED -- do not run, do not delete pending confirmation** -- legacy backfill + e-ticket ETL |
 | `summons_backfill_13month.py` | 213 | Builds 13-month backfill from historical e-ticket CSVs |
 | `update_dfr_violation_lookup.py` | 206 | Updates ViolationData sheet in DFR workbook |
 | `run_eticket_export.py` | 16 | One-line wrapper to test summons_etl_enhanced |
@@ -154,7 +154,7 @@ All paths use the `carucci_r` junction form. **Do not change `carucci_r` to `Rob
 
 ```bash
 cd "C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons"
-python SummonsMaster_Simple.py
+python summons_etl_enhanced.py
 ```
 
 **Prerequisites:**
@@ -162,15 +162,7 @@ python SummonsMaster_Simple.py
 2. `Assignment_Master_V2.csv` is current
 3. Power BI is not holding a lock on `summons_powerbi_latest.xlsx`
 
-**Post-run:** Refresh Power BI dataset. Verify counts in `summons_simple_processing.log`.
-
-### DFR Export (When Needed)
-
-```bash
-python summons_etl_enhanced.py
-```
-
-This also writes to `summons_powerbi_latest.xlsx` AND exports DFR records to the Drone workbook.
+**Post-run:** Refresh Power BI dataset. Verify counts in `summons_etl.log`. DFR records are automatically exported to the Drone workbook.
 
 ### Backfill Rebuild (Rare)
 
@@ -193,7 +185,7 @@ Only needed if historical e-ticket data must be reprocessed from scratch.
 7. **ASSIGNMENT_OVERRIDES** dict is personnel-sensitive -- confirm changes with the user before modifying.
 8. **Archive, don't delete** -- move obsolete files to `archive/` with datestamp per workspace conventions.
 9. **Test with dry-run** before writing to staging -- log output counts and compare to prior month.
-10. **Two scripts write the same output file** -- `SummonsMaster_Simple.py` and `summons_etl_enhanced.py` both write `summons_powerbi_latest.xlsx`. Run only one at a time.
+10. **Single production script** -- `summons_etl_enhanced.py` is the sole production script. `SummonsMaster_Simple.py` is deprecated (archived 2026-03-28).
 
 ---
 
@@ -216,7 +208,7 @@ After each ETL run, verify:
 
 ## Known Issues and Tech Debt
 
-1. **Two active scripts produce the same output file.** `SummonsMaster_Simple.py` and `summons_etl_enhanced.py` both write to `summons_powerbi_latest.xlsx`. Running both in sequence means the second overwrites the first.
+1. **~~Two active scripts produce the same output file.~~** RESOLVED 2026-03-28: `summons_etl_enhanced.py` is authoritative. `SummonsMaster_Simple.py` moved to `archive/deprecated/`. See `docs/etl-diff-analysis.md`.
 2. **Hardcoded backfill path.** `SummonsMaster_Simple.py` references `2025_12_department_wide_summons.csv` -- this will need updating if a new backfill is generated.
 3. **config.yaml is stale.** Uses `_EXPORTS` folder prefix and references `Assignment_Master.xlsm` (not V2.csv). No active script loads it.
 4. **~75 dead Python scripts in root.** Prior cleanup archived copies but originals remain. See `reorganization_proposal.md`.
@@ -239,14 +231,14 @@ After each ETL run, verify:
 - **File naming:** `YYYY_MM_DD_short_description.ext`
 - **Archive-first:** Never delete. Move to `archive/` with datestamp.
 - **Case numbers:** Force `ReportNumberNew` to string dtype on Excel load (preserve `YY-NNNNNN` format).
-- **Log file:** Check `summons_simple_processing.log` for run diagnostics.
+- **Log file:** Check `summons_etl.log` for run diagnostics.
 - **Workspace root:** `C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Summons`
 
 ---
 
 ## Human Review Needed
 
-1. **Which ETL is authoritative?** `SummonsMaster_Simple.py` and `summons_etl_enhanced.py` both produce the same output. Clarify which is the single production script.
+1. **~~Which ETL is authoritative?~~** RESOLVED 2026-03-28: `summons_etl_enhanced.py` is authoritative. `SummonsMaster_Simple.py` deprecated and moved to `archive/deprecated/`.
 2. **Is `config.yaml` loaded by anything?** It references old paths. May be safe to archive.
 3. **Is `process_monthly_summons.py` still used?** It has different processing logic than `SummonsMaster_Simple.py`.
 4. **Badge 0388 override** in `SummonsMaster_Simple.py` -- is LIGGIO still on this assignment?
@@ -259,16 +251,16 @@ After each ETL run, verify:
 ## Common User Questions
 
 **Q: How do I add a new month's data?**
-A: Drop the e-ticket CSV into `05_EXPORTS/_Summons/E_Ticket/{year}/month/` named `{YYYY}_{MM}_eticket_export.csv`, then run `python SummonsMaster_Simple.py`.
+A: Drop the e-ticket CSV into `05_EXPORTS/_Summons/E_Ticket/{year}/month/` named `{YYYY}_{MM}_eticket_export.csv`, then run `python summons_etl_enhanced.py`.
 
 **Q: Power BI shows wrong counts -- what's happening?**
 A: Check if visuals use `COUNTROWS` instead of `SUM(TICKET_COUNT)`. Aggregate records have TICKET_COUNT > 1. See `DAX/TICKET_COUNT_MEASURES.dax` for correct measures.
 
 **Q: A new officer isn't appearing in the dashboard.**
-A: Update `Assignment_Master_V2.csv` with their badge number, then re-run the ETL. If they're a temporary assignment, add them to `ASSIGNMENT_OVERRIDES` in `SummonsMaster_Simple.py`.
+A: Update `Assignment_Master_V2.csv` with their badge number, then re-run the ETL. If they're a temporary assignment, add them to `ASSIGNMENT_OVERRIDES` in `summons_etl_enhanced.py`.
 
 **Q: The 13-month trend shows a gap.**
 A: Verify the e-ticket export exists for that month. Check `summons_simple_processing.log` for any file-not-found warnings.
 
 **Q: How do I change the violation type classification?**
-A: Look at the TYPE assignment logic in `SummonsMaster_Simple.py`. Moving = Title 39 moving statutes; Parking = parking keywords; Criminal = criminal statutes. The logic is in the `classify_violation_type()` function.
+A: Look at the TYPE assignment logic in `summons_etl_enhanced.py`. TYPE is taken directly from the e-ticket export `Case Type Code` column (M=Moving, P=Parking, C=Criminal). See `_categorize_violations()` in the `SummonsETLProcessor` class.
