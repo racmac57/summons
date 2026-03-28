@@ -143,9 +143,24 @@
     "Reduces root from ~150 files to ~18 files"
   ],
   "security_flags": [
-    "No credentials or tokens found in repository",
-    "ASSIGNMENT_OVERRIDES contains officer names and badge numbers (personnel data, low sensitivity)",
-    "Hardcoded paths expose username (carucci_r) but this is standard for this workspace"
+    {
+      "flag_id": "SF-006",
+      "description": "ASSIGNMENT_OVERRIDES contains officer names and badge numbers (personnel data)",
+      "location": "summons_etl_enhanced.py",
+      "risk_decision": "accepted",
+      "accepted_by": "RAC",
+      "date": "2026-03-28",
+      "notes": "Badge-to-name mappings required for business logic. Cannot be externalized without breaking ETL. Low sensitivity — same data appears in Power BI dashboard."
+    },
+    {
+      "flag_id": "SF-007",
+      "description": "Hardcoded paths expose username (carucci_r) — standard for this workspace",
+      "location": "multiple scripts",
+      "risk_decision": "accepted",
+      "accepted_by": "RAC",
+      "date": "2026-03-28",
+      "notes": "Not a secret — carucci_r is the junction-resolved user profile. Documented in config-reference.md."
+    }
   ],
   "human_review_needed": [
     "RESOLVED 2026-03-28: summons_etl_enhanced.py is authoritative; SummonsMaster_Simple.py deprecated to archive/deprecated/",
