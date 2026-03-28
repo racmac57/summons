@@ -246,3 +246,12 @@ nppBackup/
 
 # Claude settings
 .claude/
+
+# Standard patterns (swarm audit 2026-03-28)
+*.xlsx~
+~$*.xlsx
+*.xlsm~
+~$*.xlsm
+*.pyc
+*.env
+temp/
