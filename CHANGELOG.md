@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [2.3.0] — 2026-04-14
+### Added
+- Historical badge resolution: `_load_assignment_master` now pulls `STATUS` and `INACTIVE_REASON` and retains both ACTIVE and INACTIVE rows in the lookup. `_enrich_with_officer_data` logs ticket/badge counts resolved against INACTIVE personnel so resigned/retired officers no longer surface as `UNKNOWN - XXXX`.
+- DFR export: `Violation Type` (col S, sourced from `TYPE` post-PEO) and `Fine Amount` (col T, from `FINE_AMOUNT`) written directly from ETL values; no longer dependent on `update_dfr_violation_lookup.py`.
+- `DFR_ASSIGNMENTS` config: date-bounded overrides composing with `ASSIGNMENT_OVERRIDES`. Initial entries: Ramirez (#2025) March window 2026-03-01..2026-03-04 → SSOCC; Lt. Dominguez (#0115) TTD from 2026-04-06 (open-ended) → TTD.
+- New `scripts/summons_etl_normalize.py` — `normalize_date_windows` enforces a one-month-per-row guardrail by auto-splitting multi-month assignment ranges; clips open-ended windows at the data's max date.
+- New `scripts/verify_summons_against_raw.py --report-month YYYY-MM` — reconciles raw vs staging row/badge counts and exits non-zero if any INACTIVE badge from raw lacks a real display name in staging.
+
+### Changed
+- `_apply_dfr_assignment_windows` integrated into `create_unified_summons_dataset`; runs after concat and before PEO/backfill so date-window overrides take effect on enriched rows.
+
+### Verified
+- 2026-03 reconciliation: 4148/4160 rows staged, 64/64 badges, 0 remaining `UNKNOWN`. Historical INACTIVE badge `0381` correctly resolved across 2025-05/08/09 months.
+
 ## [2026-03-28] — swarm-run
 ### Added
 - `CHANGELOG.md` (this file) -- Root-level changelog
