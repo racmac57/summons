@@ -1,5 +1,19 @@
 # Project Summary -- Summons ETL Pipeline
 
+## v2.3.0 — Status-Based Retention (2026-04-14)
+
+The pipeline now treats officer roster history as a first-class input, not a snapshot. Three coupled changes:
+
+- **Historical badge resolution.** `_load_assignment_master` retains both `ACTIVE` and `INACTIVE` rows from `Assignment_Master_V2.csv` and surfaces `STATUS` + `INACTIVE_REASON` (Personnel v1.7.0). Tickets written by officers who have since resigned/retired/etc. resolve to a real display name instead of `UNKNOWN - XXXX`.
+- **`DFR_ASSIGNMENTS` date-windowed overrides.** A new module-level list lets you say "this officer has assignment X between dates A and B" without rewriting the officer's other tickets. Open-ended windows (e.g., Lt. Dominguez TTD from 2026-04-06) are clipped to the data's max date and auto-split per calendar month by `normalize_date_windows` so Power BI month buckets stay clean.
+- **Reconciliation CLI.** `python scripts/verify_summons_against_raw.py --report-month YYYY-MM` produces a one-screen receipt comparing staged vs raw e-ticket counts, badge counts, and INACTIVE resolutions. Exits non-zero if any INACTIVE badge from raw is still `UNKNOWN` in staging.
+
+DFR exports also gained two first-class columns: `Violation Type` (col S, sourced from `TYPE` post-PEO reclassification) and `Fine Amount` (col T, from `FINE_AMOUNT`). No more dependency on `update_dfr_violation_lookup.py` for those values.
+
+For everyday use of the windowed override system, see `HOW_TO_USE_ADD_TTD_WINDOW.md`.
+
+---
+
 ## What It Does
 
 Processes police summons (traffic, parking, ordinance violation citations) for the Hackensack Police Department. Raw e-ticket exports from the department's electronic citation system are merged with historical backfill data and officer assignment records to produce a single Excel staging file consumed by a Power BI dashboard.
@@ -33,6 +47,6 @@ DAX measures in `DAX/TICKET_COUNT_MEASURES.dax` use `SUM(TICKET_COUNT)` (not COU
 | `DAX/TICKET_COUNT_MEASURES.dax` | Power BI DAX measures |
 | `CLAUDE.md` | Authoritative AI handoff document |
 
-## Current State (2026-03-28)
+## Current State (2026-04-14)
 
-The pipeline is operational but the repository has significant clutter: ~75 dead Python scripts, stale markdown documentation, empty junk files, and broken batch files. A reorganization proposal exists at `reorganization_proposal.md`. The two active ETL scripts (`SummonsMaster_Simple.py` and `summons_etl_enhanced.py`) both write the same output file, requiring the user to decide which to run.
+The pipeline is in production with v2.3.0 status-based retention deployed. `summons_etl_enhanced.py` (entry point: `run_eticket_export.py`) is the authoritative ETL — `SummonsMaster_Simple.py` was deprecated and moved to `archive/deprecated/` on 2026-03-28. End-to-end validation for the 2026-03 reporting month: 4148/4160 rows staged, 64/64 badges, 0 remaining `UNKNOWN`, exit 0 from the reconciliation CLI.

@@ -9,6 +9,15 @@ This repository processes **police summons data** for the Hackensack Police Depa
 **Output:** `03_Staging\Summons\summons_powerbi_latest.xlsx` -> Power BI dashboard
 **Remote:** `https://github.com/racmac57/summons.git` (branch: `main`)
 
+## v2.3.0 Rules (Status-Based Retention — 2026-04-14)
+
+- `_load_assignment_master` retains both ACTIVE and INACTIVE rows; `STATUS` and `INACTIVE_REASON` columns must be carried forward. Do not filter by `STATUS` upstream of the merge — INACTIVE rows are needed to resolve historical badges.
+- Date-bounded assignments live in the `DFR_ASSIGNMENTS` list at module top of `summons_etl_enhanced.py`. They compose with the static `ASSIGNMENT_OVERRIDES` lookup (windows win on date overlap). Do not collapse the two — they have different semantics.
+- `normalize_date_windows` (`scripts/summons_etl_normalize.py`) is the one-month-per-row guardrail for `DFR_ASSIGNMENTS`. Open-ended end dates are sentinel `None` and clipped to the data's max date at runtime; do not introduce far-future literal dates.
+- New windows are added via the `/add-ttd-window` skill (`.claude/skills/add-ttd-window/SKILL.md`). Badge validation must allow legacy 1- and 2-digit badges (`#1`, `#15`) — never require `len >= 3`. Pad via `.zfill(4)`.
+- `Violation Type` (DFR col S) and `Fine Amount` (DFR col T) are written directly from ETL values (`TYPE` post-PEO; `FINE_AMOUNT` numeric). Do not re-route them through `update_dfr_violation_lookup.py`.
+- After every monthly run, `python scripts/verify_summons_against_raw.py --report-month YYYY-MM` is the publish gate. Exit 0 = clean to publish.
+
 ---
 
 ## End-to-End ETL Flow
