@@ -29,6 +29,12 @@ except ImportError:
     def get_onedrive_root():
         return Path(r"C:\Users\carucci_r\OneDrive - City of Hackensack")
 
+# Local scripts/ for normalize_date_windows
+_local_scripts = Path(__file__).resolve().parent / "scripts"
+if _local_scripts.exists() and str(_local_scripts) not in sys.path:
+    sys.path.insert(0, str(_local_scripts))
+from summons_etl_normalize import normalize_date_windows  # noqa: E402
+
 # Manual overrides for temp assignments or badges not in Assignment Master
 # Supports _condition: only apply when column contains substring (e.g. FIRE LANES)
 # WG2 uses "SSOCC" to match Assignment Master display preference.
@@ -45,6 +51,28 @@ ASSIGNMENT_OVERRIDES = {
         "WG2": "SSOCC",
     },
 }
+
+# ─── DFR Date-Windowed Assignments ──────────────────────────────────────────
+# Time-bounded overrides applied per summons date (composes with ASSIGNMENT_OVERRIDES;
+# date-window match wins on overlap). Use None for open-ended end dates.
+DFR_ASSIGNMENTS = [
+    {
+        "badge": "2025",
+        "date_start": "2026-03-01",
+        "date_end": "2026-03-04",
+        "WG2": "SSOCC",
+        "OFFICER_DISPLAY_NAME": "M. RAMIREZ #2025",
+        "reason": "MARCH_WINDOW",
+    },
+    {
+        "badge": "0115",
+        "date_start": "2026-04-06",
+        "date_end": None,  # open-ended TTD
+        "WG2": "TTD",
+        "OFFICER_DISPLAY_NAME": "LT. DOMINGUEZ #0115",
+        "reason": "TRANSITIONAL_DUTY",
+    },
+]
 
 # ─── DFR Configuration ──────────────────────────────────────────────────────
 DFR_CONFIG = {
@@ -64,6 +92,8 @@ DFR_CONFIG = {
         "N": "DFR Unit ID",
         "O": "OCA",
         "Q": "Notes",
+        "S": "Violation Type",
+        "T": "Fine Amount",
     },
     "status_map": {
         "ACTI": "Active",
@@ -163,7 +193,8 @@ class SummonsETLProcessor:
                 logging.error("Assignment Master missing display name column (need 'Proposed 4-Digit Format' or 'STANDARD_NAME')")
                 return pd.DataFrame()
 
-            optional = {'WG1', 'WG2', 'WG3', 'WG4', 'TEAM', 'RANK', 'LAST_NAME', 'TITLE'} & set(df.columns)
+            optional = {'WG1', 'WG2', 'WG3', 'WG4', 'TEAM', 'RANK', 'LAST_NAME', 'TITLE',
+                        'STATUS', 'INACTIVE_REASON'} & set(df.columns)
             df_clean = df[list({display_col, 'PADDED_BADGE_NUMBER'} | optional)].copy()
 
             df_clean = df_clean.rename(columns={display_col: 'OFFICER_DISPLAY_NAME'})
@@ -172,7 +203,15 @@ class SummonsETLProcessor:
             )
             df_clean = df_clean.drop_duplicates(subset='PADDED_BADGE_NUMBER').reset_index(drop=True)
 
-            logging.info(f"Loaded {len(df_clean)} officer records from Assignment Master")
+            if 'STATUS' in df_clean.columns:
+                status_norm = df_clean['STATUS'].fillna('').astype(str).str.strip().str.upper()
+                inactive_n = int((status_norm == 'INACTIVE').sum())
+                logging.info(
+                    f"Loaded {len(df_clean)} officer records from Assignment Master "
+                    f"({inactive_n} INACTIVE retained for historical badge resolution)"
+                )
+            else:
+                logging.info(f"Loaded {len(df_clean)} officer records from Assignment Master")
             return df_clean
 
         except Exception as e:
@@ -337,6 +376,18 @@ class SummonsETLProcessor:
         # Q: Notes (ETL batch ID)
         mapped['Notes'] = f"ETL {datetime.now().strftime('%Y-%m-%d %H:%M')}"
 
+        # S: Violation Type — sourced directly from ETL TYPE (post-PEO reclassification)
+        mapped['Violation Type'] = (
+            dfr_df['TYPE'].astype(str).fillna('') if 'TYPE' in dfr_df.columns else ''
+        )
+
+        # T: Fine Amount — sourced directly from ETL FINE_AMOUNT; blank when null (not zero)
+        if 'FINE_AMOUNT' in dfr_df.columns:
+            fine = pd.to_numeric(dfr_df['FINE_AMOUNT'], errors='coerce')
+            mapped['Fine Amount'] = fine.where(fine.notna(), '')
+        else:
+            mapped['Fine Amount'] = ''
+
         return mapped
 
     def export_to_dfr_workbook(self, df):
@@ -388,7 +439,7 @@ class SummonsETLProcessor:
 
         ws = wb[DFR_CONFIG['target_sheet']]
         formula_cols = DFR_CONFIG['formula_columns']
-        col_map = {c: i for i, c in enumerate("ABCDEFGHIJKLMNOPQR", 1)}
+        col_map = {c: i for i, c in enumerate("ABCDEFGHIJKLMNOPQRST", 1)}
         next_row = ws.max_row + 1
         for _, r in to_append.iterrows():
             for col_letter, field in DFR_CONFIG['column_map'].items():
@@ -442,6 +493,17 @@ class SummonsETLProcessor:
         logging.info(
             f"Badge join: {(~unmatched_mask).sum()} matched, {unmatched_mask.sum()} unmatched"
         )
+
+        # Report badges resolved against INACTIVE personnel (historical lookup)
+        if 'STATUS' in merged.columns:
+            status_norm = merged['STATUS'].fillna('').astype(str).str.strip().str.upper()
+            inactive_matched = (~unmatched_mask) & (status_norm == 'INACTIVE')
+            if inactive_matched.any():
+                badges = merged.loc[inactive_matched, 'PADDED_BADGE_NUMBER'].unique().tolist()
+                logging.info(
+                    f"Resolved {inactive_matched.sum()} ticket(s) to INACTIVE personnel "
+                    f"({len(badges)} badge(s)): {badges}"
+                )
 
         if unmatched_mask.sum() > 0:
             bad_badges = merged.loc[unmatched_mask, 'PADDED_BADGE_NUMBER'].unique()
@@ -640,6 +702,62 @@ class SummonsETLProcessor:
             logging.error(f"Error processing ATS report: {e}")
             return pd.DataFrame()
 
+    def _apply_dfr_assignment_windows(self, df):
+        """Apply DFR_ASSIGNMENTS by date overlap on VIOLATION_DATE.
+
+        For each (badge, date) match where the date falls inside the assignment's
+        [date_start, date_end] window, override OFFICER_DISPLAY_NAME / WG2 from the
+        assignment record. Open-ended windows are clipped to the report's max
+        VIOLATION_DATE before splitting via normalize_date_windows, so the
+        one-month-per-row guardrail holds without materializing rows beyond data.
+        """
+        if df.empty or 'PADDED_BADGE_NUMBER' not in df.columns or 'VIOLATION_DATE' not in df.columns:
+            return df
+        if not DFR_ASSIGNMENTS:
+            return df
+
+        violation_dates = pd.to_datetime(df['VIOLATION_DATE'], errors='coerce')
+        max_date = violation_dates.max()
+        if pd.isna(max_date):
+            return df
+
+        assigns = pd.DataFrame(DFR_ASSIGNMENTS).copy()
+        assigns['badge'] = assigns['badge'].astype(str).str.strip().str.zfill(4)
+        assigns['date_start'] = pd.to_datetime(assigns['date_start'], errors='coerce')
+        # Clip open-ended end dates to the data's max date (avoid 70+ years of split rows)
+        assigns['date_end'] = assigns['date_end'].fillna(max_date)
+        assigns['date_end'] = pd.to_datetime(assigns['date_end'], errors='coerce').clip(upper=max_date)
+        # Drop windows that start after the data's max date (no overlap possible)
+        assigns = assigns[assigns['date_start'] <= max_date].reset_index(drop=True)
+        if assigns.empty:
+            return df
+
+        normalized = normalize_date_windows(assigns, start_col='date_start', end_col='date_end')
+        logging.info(
+            f"DFR_ASSIGNMENTS: {len(DFR_ASSIGNMENTS)} window(s) -> {len(normalized)} month-segment(s) "
+            f"after one-month-per-row guardrail"
+        )
+
+        df = df.copy()
+        df['_vdate'] = violation_dates
+        applied = 0
+        for _, seg in normalized.iterrows():
+            mask = (
+                (df['PADDED_BADGE_NUMBER'] == seg['badge'])
+                & (df['_vdate'] >= seg['date_start'])
+                & (df['_vdate'] <= seg['date_end'])
+            )
+            if not mask.any():
+                continue
+            for col in ('OFFICER_DISPLAY_NAME', 'WG2'):
+                if col in df.columns and col in seg.index and pd.notna(seg[col]):
+                    df.loc[mask, col] = seg[col]
+            applied += int(mask.sum())
+        df = df.drop(columns=['_vdate'])
+        if applied:
+            logging.info(f"DFR_ASSIGNMENTS: applied window overrides to {applied} ticket(s)")
+        return df
+
     def create_unified_summons_dataset(self, eticket_files=None, summons_files=None, ats_files=None):
         all_datasets = []
         if eticket_files:
@@ -664,6 +782,7 @@ class SummonsETLProcessor:
             return pd.DataFrame()
 
         unified_df = pd.concat(all_datasets, ignore_index=True, sort=False)
+        unified_df = self._apply_dfr_assignment_windows(unified_df)
         unified_df['PROCESSED_TIMESTAMP'] = datetime.now()
         unified_df['ETL_VERSION'] = '2.1'
         self._generate_processing_summary(unified_df)
